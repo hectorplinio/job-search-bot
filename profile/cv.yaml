@@ -1,0 +1,174 @@
+# Perfil del candidato. Es la unica fuente de verdad que ve el LLM cuando
+# escribe cover letters y reescribe el summary. Manten esto sincronizado
+# con el CV en docx/pdf.
+
+name: Hector Plinio Navarro
+headline: Full Stack Software Developer
+# Este fichero se publica en el repo. El email va fuera a proposito: no lo
+# usa nada (el prompt no lo incluye) y en un repo publico lo rastrean los
+# bots de spam. Si algun dia hace falta, que venga de una variable de entorno.
+email: ""
+languages:
+  - "Spanish: native"
+  - "English: B2"
+location: Spain
+open_to: "100% remote (Spain or international) or hybrid in Madrid"
+
+summary: >-
+  Backend-focused Software Engineer with 5+ years of experience designing and
+  shipping distributed systems in production. Specialized in event-driven
+  microservices, Hexagonal Architecture, and multi-channel advertising
+  platforms. Track record of building systems from scratch - from domain
+  modeling and API design to analytics pipelines and frontend - with 100% test
+  coverage and clean architecture as non-negotiables.
+
+skills:
+  languages: [Python, TypeScript, JavaScript]
+  backend: [FastAPI, Litestar, Django, Node.js, Express.js]
+  frontend: [React, TanStack Query, Zustand, Tailwind CSS, Radix UI, Vite]
+  data: [PostgreSQL, ClickHouse, MongoDB, Redis, Alembic]
+  messaging: [Kafka, RabbitMQ, Celery]
+  cloud: [AWS, Docker, Kubernetes, ArgoCD, GitHub Actions, Jenkins]
+  practices:
+    - TDD
+    - Hexagonal Architecture (Ports & Adapters)
+    - Event-driven microservices
+    - Inbox/Outbox pattern
+    - OpenAPI / Swagger
+    - 100% test coverage
+
+experience:
+  - id: ascend_makers
+    company: Ascend Makers
+    role: Full Stack Software Developer
+    location: Madrid
+    start: 2024-10
+    end: null
+    stack: [Python, Litestar, Kubernetes, ArgoCD, ClickHouse, PostgreSQL, Celery, Redis, React, TypeScript, AWS]
+    highlights:
+      - >-
+        Architected and shipped AscendGate from scratch: two Python
+        microservices on Kubernetes (deployed via ArgoCD) that create campaigns
+        across Meta, Google Ads (Search/PMax/DGen), DV360 and TikTok behind a
+        single unified API.
+      - >-
+        Campaign Manager enforces 160+ per-channel business rules using
+        Hexagonal Architecture (Ports & Adapters) and routes validated
+        campaigns through an event queue.
+      - >-
+        Channel Integrator implements the Inbox/Outbox pattern on PostgreSQL
+        for at-least-once delivery, with idempotency checks, distributed locks
+        and automatic recovery jobs.
+      - >-
+        Built a multi-channel reporting pipeline that ingests metrics from 7 ad
+        platforms into ClickHouse and serves 15+ KPIs through a UNION ALL query
+        engine, orchestrated with Celery Beat.
+      - >-
+        Published Chronos-Models-Shared (typed inter-service contracts) and
+        ascendgate-clients (an OpenAPI-generated Python SDK with auth, retries
+        and error mapping).
+      - >-
+        Engineered OAuth2 flows for Meta, Google Ads, DV360 and TikTok with
+        AES-GCM encrypted credential storage in PostgreSQL.
+      - >-
+        Built the AscendGX frontend in React 18 + TypeScript with TanStack
+        Query, Zustand, React Hook Form + Zod and Radix UI.
+      - >-
+        Reached 100% unit and integration test coverage across every
+        microservice through strict TDD.
+
+  - id: telefonica
+    company: Telefonica
+    role: Backend Software Developer
+    location: Madrid
+    start: 2024-06
+    end: 2024-10
+    stack: [Python, Django, OpenAI, LLM, Kafka, Docker, Jenkins]
+    highlights:
+      - >-
+        Led the backend team building automatic tagging for the Movistar movie
+        and series catalog, integrating OpenAI language models to generate tags
+        from multiple Kafka topics.
+      - >-
+        Owned the architecture decisions: inter-service communication, Kafka
+        topic design, and publishing generated tags back to Kafka for
+        downstream systems.
+      - >-
+        Introduced a Pytest unit and integration testing strategy with an 80%
+        coverage floor, and mentored new joiners onto the codebase.
+
+  - id: jobandtalent
+    company: Jobandtalent
+    role: Full Stack Software Developer
+    location: Madrid
+    start: 2022-03
+    end: 2024-05
+    stack: [Node.js, TypeScript, React, Python, Django, Docker]
+    highlights:
+      - >-
+        Built backend and frontend in Node.js, React and TypeScript, plus a
+        Python/Django integration layer.
+      - >-
+        Introduced Hexagonal Architecture and microservices, cutting deployment
+        time by 40% and improving system efficiency by 25%.
+      - >-
+        Built typed HTTP client libraries from the backend documentation
+        standards, reducing API request errors by 40%.
+      - >-
+        Migrated data from three companies into one centralised internal
+        application with a 90% success rate, and shipped microfrontends so all
+        apps run on a shared host.
+
+  - id: devaway
+    company: Devaway
+    role: Full Stack Software Developer
+    location: Villena
+    start: 2021-05
+    end: 2022-03
+    stack: [Node.js, TypeScript, React, Kafka, RabbitMQ]
+    highlights:
+      - >-
+        Created the project from scratch with Hexagonal Architecture, covering
+        use cases, endpoints, interfaces, documentation and the UI.
+      - >-
+        Implemented payroll payment processing and reduced monthly payroll
+        errors by 30%.
+      - >-
+        Automated the full application workflow with Kafka and RabbitMQ to
+        process CSV uploads, removing manual data entry.
+
+education:
+  - "Higher National Diploma in Web Application Development - IES Hermanos Amoros, Villena (2020-2022)"
+  - "Higher National Diploma in International Trade - IES Las Fuentes, Villena (2012-2014)"
+
+# Que experiencia sacar a portada segun lo que pida la oferta. Lo usa el
+# generador de summary para decidir el orden y el enfasis.
+emphasis_rules:
+  python: [ascend_makers, telefonica]
+  fastapi: [ascend_makers]
+  litestar: [ascend_makers]
+  django: [telefonica, jobandtalent]
+  "node.js": [jobandtalent, devaway]
+  nodejs: [jobandtalent, devaway]
+  typescript: [jobandtalent, devaway, ascend_makers]
+  react: [ascend_makers, jobandtalent]
+  llm: [telefonica]
+  openai: [telefonica]
+  ai: [telefonica]
+  kubernetes: [ascend_makers]
+  argocd: [ascend_makers]
+  aws: [ascend_makers, jobandtalent]
+  kafka: [telefonica, devaway]
+  rabbitmq: [devaway]
+  clickhouse: [ascend_makers]
+  postgresql: [ascend_makers]
+  celery: [ascend_makers]
+  microservices: [ascend_makers, jobandtalent]
+  "hexagonal architecture": [ascend_makers, jobandtalent, devaway]
+  tdd: [ascend_makers]
+
+# Anclas que la cover letter debe intentar usar cuando la oferta lo justifique.
+cover_letter_anchors:
+  always: ascend_makers
+  ai_or_llm: telefonica
+  node_or_typescript: jobandtalent

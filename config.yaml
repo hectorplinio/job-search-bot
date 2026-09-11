@@ -1,0 +1,216 @@
+# Criterios de busqueda del bot. Todo lo que hay aqui se puede tocar sin
+# recompilar nada: el scoring y los filtros leen este fichero en cada ejecucion.
+
+search:
+  # Cada query se lanza contra cada fuente que la soporte.
+  queries:
+    - "backend engineer python"
+    - "python developer"
+    - "node.js backend"
+    - "typescript backend"
+    - "backend engineer microservices"
+    - "senior software engineer python"
+  # Solo aplica a las fuentes con filtro geografico (LinkedIn, Glassdoor).
+  locations:
+    - "Spain"
+    - "European Union"
+  # Cuantas ofertas pedir como maximo a cada fuente por query.
+  max_results_per_query: 25
+  # Ignora ofertas publicadas hace mas de N dias (si la fuente da la fecha).
+  max_age_days: 21
+
+salary:
+  currency: EUR
+  # Por debajo de esto se descarta la oferta.
+  minimum: 40000
+  # A partir de aqui la oferta puntua al maximo en el bloque de salario.
+  target: 50000
+  # Muchas ofertas no publican salario. Si es false, se descartan todas
+  # las que no lo indiquen (te quedaras con muy pocas).
+  accept_unknown: true
+
+work_mode:
+  accepted: [remote, hybrid, unknown]
+  rejected: [onsite]
+
+keywords:
+  # La oferta necesita al menos uno de estos para considerarse del perfil.
+  required_any:
+    - python
+    - node.js
+    - nodejs
+    - typescript
+    - backend
+  # Peso de cada tecnologia en el scoring (0-10).
+  weighted:
+    python: 10
+    typescript: 8
+    node.js: 8
+    nodejs: 8
+    fastapi: 6
+    django: 6
+    litestar: 6
+    postgresql: 6
+    postgres: 6
+    mongodb: 3
+    redis: 3
+    clickhouse: 4
+    aws: 7
+    gcp: 4
+    azure: 4
+    kubernetes: 6
+    docker: 3
+    argocd: 4
+    kafka: 5
+    rabbitmq: 4
+    celery: 4
+    microservices: 7
+    microservicios: 7
+    "hexagonal architecture": 8
+    "arquitectura hexagonal": 8
+    "domain driven": 6
+    ddd: 5
+    tdd: 6
+    "event-driven": 6
+    react: 3
+    llm: 6
+    openai: 5
+    "machine learning": 2
+
+exclude:
+  # Si el titulo contiene cualquiera de estos, se descarta.
+  titles:
+    - junior
+    - jr.
+    - intern
+    - internship
+    - becario
+    - practicas
+    - prácticas
+    - trainee
+    - apprentice
+    - "student"
+  # Si el cuerpo de la oferta contiene esto, se descarta.
+  description:
+    - "100% presencial"
+    - "totalmente presencial"
+    - "trabajo presencial obligatorio"
+    - "no se admite teletrabajo"
+    - "sin teletrabajo"
+  # Roles y stacks de otro perfil. Descartan solo si el TITULO no nombra
+  # tambien algo de core_title_terms. Sin esto se cuelan cosas como
+  # "Senior .NET Full-stack Developer" o "Senior React Native Developer",
+  # que puntuaban alto porque la descripcion listaba medio ecosistema.
+  off_profile_titles:
+    - frontend
+    - front-end
+    - front end
+    - react native
+    - mobile developer
+    - ios
+    - android
+    - flutter
+    - data scientist
+    - data analyst
+    - "machine learning engineer"
+    - "ml engineer"
+    - qa
+    - tester
+    - designer
+    - "scrum master"
+    - "product manager"
+    - "product owner"
+    - "business analyst"
+    - sap
+    - abap
+    - salesforce
+    - wordpress
+    - ".net"
+    - c#
+    - php
+    - "java developer"
+    - "java engineer"
+    - ruby
+    - cobol
+  # Lo que rescata un titulo de la lista de arriba. A proposito NO incluye
+  # "full stack": un ".NET Full-stack" sigue siendo una oferta de .NET.
+  core_title_terms:
+    - python
+    - node
+    - node.js
+    - nodejs
+    - typescript
+    - backend
+    - back-end
+  # Tecnologias veto: descartan solo si la oferta NO trae stack moderno
+  # (Python o Node/TypeScript). Un puesto "PHP + Python" sobrevive.
+  soft_veto_stack:
+    - php
+    - laravel
+    - symfony
+    - wordpress
+    - cobol
+    - ".net"
+    - c#
+    - abap
+    - salesforce
+
+scoring:
+  # Nota minima (1-10) para que el bot te mande la oferta.
+  notify_threshold: 6
+  # Reevaluar con Claude las ofertas que superen el umbral de reglas.
+  # Cuesta dinero (unos centimos por ejecucion), pero mejora mucho la nota
+  # y escribe el "por que encaja" que ves en Telegram.
+  use_llm: true
+  # Solo se manda a Claude lo que ya paso el filtro de reglas y saco >= esto.
+  llm_min_rule_score: 5
+  # Tope de llamadas al LLM por ejecucion, para acotar el gasto.
+  llm_max_calls_per_run: 15
+
+sources:
+  manfred:
+    enabled: true
+  linkedin:
+    enabled: true
+    # 2 = remoto, 3 = hibrido, 1 = presencial
+    workplace_types: ["2", "3"]
+  tecnoempleo:
+    enabled: true
+    # solo teletrabajo total o parcial
+    telework_only: true
+    # Su buscador es por tecnologia, no por frase: dos terminos cubren mas
+    # que seis frases largas, y le pegamos menos.
+    queries: ["python", "node.js", "typescript"]
+  infojobs:
+    enabled: true
+    # InfoJobs corta por IP si le encadenas muchas busquedas seguidas.
+    # Con dos consultas amplias aguanta.
+    queries: ["python", "backend"]
+  glassdoor:
+    # Apagada de salida: sin sesion responde 403 a las pocas peticiones.
+    # Pon GLASSDOOR_COOKIE en .env, ejecuta `jobbot check-sources` y, si
+    # devuelve ofertas, cambia esto a true.
+    enabled: false
+  remoteok:
+    enabled: true
+  weworkremotely:
+    enabled: true
+  otta:
+    # Otta migro a Welcome to the Jungle. Esta detras de AWS WAF con reto de
+    # JavaScript y su listado esta ademas detras del alta de cuenta, asi que
+    # copiar una cookie no vale: hay que ir con navegador.
+    #
+    # Sesion iniciada el 11/09/2026 con `jobbot login otta`, valida un ano.
+    # Si algun dia deja de devolver ofertas, vuelve a ejecutar ese comando.
+    enabled: true
+    # Otta no busca por texto: te ensena los "matches" que calcula a partir de
+    # tus preferencias en su web, de una en una. Por eso aqui no hay queries.
+    # Si las ofertas no encajan, el sitio donde se arregla es tu perfil de Otta.
+    #
+    # Cuantas recorrer por ejecucion. Cada una son unos 4 segundos de
+    # navegador, asi que 20 salen por minuto y medio.
+    max_jobs: 20
+
+telegram:
+  # Cuantas ofertas manda como maximo cada ejecucion, de mejor a peor nota.
+  max_alerts_per_run: 12

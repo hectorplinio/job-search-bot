@@ -1,0 +1,61 @@
+name: Buscar ofertas
+
+# Cada 4 horas entre las 7 y las 21 (hora peninsular en invierno).
+# GitHub usa UTC y la cola de cron gratuita puede retrasarse unos minutos.
+on:
+  schedule:
+    - cron: "0 6,10,14,18 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "No mandar nada a Telegram"
+        type: boolean
+        default: false
+
+concurrency:
+  group: job-search
+  cancel-in-progress: false
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # -e . instala el paquete y deja disponible el comando `jobbot`.
+      - run: pip install -e .
+
+      # El historial vive en la cache del runner: sin esto, cada ejecucion
+      # empezaria en blanco y te mandaria las mismas ofertas otra vez.
+      # `restore-keys` recupera la cache mas reciente aunque la clave exacta
+      # (con el run number) no exista todavia.
+      - name: Recuperar historial
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: jobbot-history-${{ github.run_number }}
+          restore-keys: |
+            jobbot-history-
+
+      - name: Buscar
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JOBBOT_LOG_LEVEL: INFO
+        run: |
+          jobbot run ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      - name: Guardar historial
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data
+          key: jobbot-history-${{ github.run_number }}

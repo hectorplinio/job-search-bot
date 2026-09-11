@@ -1,0 +1,227 @@
+"""Tests de los parsers, con fixtures copiados de la estructura real de cada
+portal (septiembre 2026). Si un portal cambia el HTML, estos tests seguiran
+verdes pero la fuente devolvera cero: por eso `jobbot run` avisa por fuente.
+"""
+
+from __future__ import annotations
+
+import json
+
+from jobbot.adapters.sources.infojobs import InfoJobsSource
+from jobbot.adapters.sources.linkedin import LinkedInSource
+from jobbot.adapters.sources.manfred import ManfredSource
+from jobbot.adapters.sources.remoteok import RemoteOkSource
+from jobbot.adapters.sources.tecnoempleo import TecnoempleoSource
+from jobbot.domain.models import WorkMode
+
+from .conftest import FakeHttp
+
+LINKEDIN_CARD = """
+<ul>
+<li>
+  <div class="base-card job-search-card" data-entity-urn="urn:li:jobPosting:4439920031">
+    <a class="base-card__full-link" href="https://es.linkedin.com/jobs/view/backend-developer-python-at-acme-4439920031?position=1">
+      <span class="sr-only">Backend Developer (Python)</span>
+    </a>
+    <div class="base-search-card__info">
+      <h3 class="base-search-card__title">Backend Developer (Python)</h3>
+      <h4 class="base-search-card__subtitle"><a href="#">Acme Logistics</a></h4>
+      <div class="base-search-card__metadata">
+        <span class="job-search-card__location">Barcelona (Remoto)</span>
+        <time class="job-search-card__listdate" datetime="2026-09-08">hace 2 días</time>
+      </div>
+    </div>
+  </div>
+</li>
+</ul>
+"""
+
+LINKEDIN_DETAIL = """
+<div class="show-more-less-html__markup">
+  Buscamos Senior Backend con Python, FastAPI, PostgreSQL, Kubernetes y AWS.
+  Salario: 55.000€ - 70.000€ brutos anuales.
+</div>
+<ul><li class="description__job-criteria-item">Nivel: Intermedio</li></ul>
+"""
+
+TECNOEMPLEO_CARD = """
+<div class="col-12">
+  <div class="p-3 border rounded mb-3 bg-white">
+    <div class="row fs--15">
+      <div class="col-10">
+        <h3 class="fs-5 mb-2">
+          <a href="https://www.tecnoempleo.com/senior-python-developer-acme/python/rf-f8de12f5c2daa375aa42"
+             class="font-weight-bold" title="Senior Python Developer">Senior Python Developer</a>
+        </h3>
+        <a href="/acme-trabajo" class="text-primary link-muted">Acme</a>
+        <span class="hidden-md-down text-gray-800">
+          Modalidad: 100% remoto. Salario: 50000 a 60000 brutos anuales. Stack Python, PostgreSQL, AWS.
+          <span class="badge bg-danger text-white mx-1">Python</span>
+          <span class="badge bg-gray-500 mx-1">AWS</span>
+        </span>
+      </div>
+      <div class="col-12 col-lg-3 text-right">
+        <span>10/09/2026<br><b>Madrid</b> (Teletrabajo)<br>Programador</span>
+      </div>
+    </div>
+  </div>
+</div>
+"""
+
+INFOJOBS_CARD = """
+<div class="ij-OfferCardContent-info"><div class="ij-OfferCardContent-description">
+  <h2><a class="ij-OfferCardContent-description-link"
+         href="//www.infojobs.net/madrid/tech-lead-python/of-i1f23a455c44b5087b65774dc3b26c7?applicationOrigin=search"
+         aria-label="Tech Lead (Python)"><span>Tech Lead (Python)</span></a></h2>
+  <h3><a class="ij-OfferCardContent-description-subtitle-link" href="#">SABIA Personal</a></h3>
+  <ul class="ij-OfferCardContent-description-list">
+    <li class="ij-OfferCardContent-description-list-item">Madrid</li>
+    <li class="ij-OfferCardContent-description-list-item">Híbrido</li>
+    <li class="ij-OfferCardContent-description-list-item">Hace 1d</li>
+    <li class="ij-OfferCardContent-description-list-item">
+      <span class="ij-OfferCardContent-description-salary-info">50.000 €<!-- --> - <!-- -->56.000 €<!-- --> Bruto/año</span>
+    </li>
+  </ul>
+  <p class="ij-OfferCardContent-description-description">
+    Buscamos un Tech Lead con mas de 5 años en Python liderando equipos.
+  </p>
+</div></div>
+"""
+
+MANFRED_LIST = [
+    {
+        "id": 8451,
+        "position": "Senior Python Engineer",
+        "slug": "acme-senior-python-engineer",
+        "status": "ACTIVE",
+        "salaryFrom": 50000,
+        "salaryTo": 60000,
+        "remotePercentage": 100,
+        "currency": "€",
+        "locations": [],
+        "highlights": ["🤖 IA", "🌎 Remoto 100%"],
+        "updatedAt": "2026-09-10T09:46:47.680Z",
+        "company": {"name": "Acme"},
+    },
+    {
+        "id": 8457,
+        "position": ".NET Developer",
+        "slug": "otra-net-developer",
+        "status": "ACTIVE",
+        "salaryFrom": 0,
+        "salaryTo": 35000,
+        "remotePercentage": 40,
+        "currency": "€",
+        "locations": ["Santander, España"],
+        "highlights": [],
+        "updatedAt": "2026-09-04T20:18:07.614Z",
+        "company": {"name": "Otra"},
+    },
+]
+
+MANFRED_DETAIL = (
+    '<script id="__NEXT_DATA__" type="application/json">'
+    + json.dumps(
+        {
+            "props": {
+                "pageProps": {
+                    "offer": {
+                        "jsonld": json.dumps(
+                            {
+                                "@type": "JobPosting",
+                                "description": "Python, FastAPI, PostgreSQL, Kubernetes y AWS.",
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    )
+    + "</script>"
+)
+
+
+async def test_linkedin_parsea_tarjeta_y_ficha(criteria) -> None:
+    http = FakeHttp(
+        {
+            "seeMoreJobPostings": LINKEDIN_CARD,
+            "jobPosting/4439920031": LINKEDIN_DETAIL,
+        }
+    )
+    source = LinkedInSource(http, {})
+    offers = await source.search(criteria)
+
+    assert len(offers) == 1
+    offer = offers[0]
+    assert offer.title == "Backend Developer (Python)"
+    assert offer.company == "Acme Logistics"
+    assert offer.external_id == "linkedin:4439920031"
+    assert offer.url == "https://es.linkedin.com/jobs/view/backend-developer-python-at-acme-4439920031"
+    assert offer.work_mode is WorkMode.REMOTE
+    # La tarjeta no trae salario; la ficha si.
+    assert offer.salary.minimum == 55_000
+    assert "FastAPI" in offer.description
+
+
+async def test_tecnoempleo_parsea_modalidad_y_salario(criteria) -> None:
+    source = TecnoempleoSource(FakeHttp({"tecnoempleo.com": TECNOEMPLEO_CARD}), {})
+    offers = await source.search(criteria)
+
+    assert len(offers) == 1
+    offer = offers[0]
+    assert offer.title == "Senior Python Developer"
+    assert offer.company == "Acme"
+    assert offer.work_mode is WorkMode.REMOTE
+    assert (offer.salary.minimum, offer.salary.maximum) == (50_000, 60_000)
+    assert "Python" in offer.tags
+
+
+async def test_infojobs_parsea_salario_partido_por_comentarios(criteria) -> None:
+    source = InfoJobsSource(FakeHttp({"infojobs.net": INFOJOBS_CARD}), {})
+    offers = await source.search(criteria)
+
+    assert len(offers) == 1
+    offer = offers[0]
+    assert offer.title == "Tech Lead (Python)"
+    assert offer.company == "SABIA Personal"
+    assert offer.external_id == "infojobs:1f23a455c44b5087b65774dc3b26c7"
+    assert offer.work_mode is WorkMode.HYBRID
+    assert (offer.salary.minimum, offer.salary.maximum) == (50_000, 56_000)
+    assert "?" not in offer.url
+
+
+async def test_manfred_filtra_por_stack_y_enriquece(criteria) -> None:
+    http = FakeHttp({"getmanfred.com/ofertas-empleo": MANFRED_DETAIL}, json_payload=MANFRED_LIST)
+    source = ManfredSource(http, {})
+    offers = await source.search(criteria)
+
+    # La oferta de .NET no menciona ninguna tecnologia del perfil.
+    assert [offer.title for offer in offers] == ["Senior Python Engineer"]
+    offer = offers[0]
+    assert offer.work_mode is WorkMode.REMOTE
+    assert (offer.salary.minimum, offer.salary.maximum) == (50_000, 60_000)
+    assert "Kubernetes" in offer.description
+
+
+async def test_remoteok_ignora_el_aviso_legal(criteria) -> None:
+    payload = [
+        {"legal": "RemoteOK legal notice"},
+        {
+            "id": "12345",
+            "position": "Senior Python Engineer",
+            "company": "Remote Co",
+            "url": "https://remoteok.com/remote-jobs/12345",
+            "description": "Python, PostgreSQL, AWS, microservices.",
+            "tags": ["python", "aws"],
+            "location": "Worldwide",
+            "salary_min": 90000,
+            "salary_max": 120000,
+            "date": "2026-09-09T10:00:00+00:00",
+        },
+    ]
+    source = RemoteOkSource(FakeHttp(json_payload=payload), {})
+    offers = await source.search(criteria)
+
+    assert len(offers) == 1
+    assert offers[0].salary.currency == "USD"
+    assert offers[0].work_mode is WorkMode.REMOTE

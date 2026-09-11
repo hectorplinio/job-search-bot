@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "job-search-bot"
+version = "0.1.0"
+description = "Buscador de ofertas backend con alertas de Telegram y generacion de cover letters"
+requires-python = ">=3.11"
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+# Solo hace falta para `jobbot login` y para la fuente Otta. El resto del bot
+# funciona sin esto. Tras instalarlo: playwright install chromium
+browser = ["playwright>=1.44"]
+
+[project.scripts]
+jobbot = "jobbot.cli:app"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# typer declara las opciones en los valores por defecto: es su forma de uso.
+"src/jobbot/cli.py" = ["B008"]
+# Los fixtures son HTML copiado de los portales; partirlos los falsearia.
+"tests/test_sources.py" = ["E501"]

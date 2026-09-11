@@ -1,0 +1,28 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+out/
+
+# Todo lo que hay en data/ es tuyo y privado: el historial, las cookies de
+# sesion y el perfil del navegador con tus cuentas abiertas. Se ignora la
+# carpeta entera salvo el .gitkeep, para que un fichero nuevo no se escape
+# por olvidar añadirlo aqui.
+data/*
+!data/.gitkeep
+
+# El CV lleva telefono y email. En un repo publico eso lo indexa Google y
+# acaba en listas de spam.
+*.pdf
+*.docx
+
+# Preferencias locales del editor, no del proyecto.
+.claude/settings.local.json

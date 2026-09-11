@@ -1,0 +1,14 @@
+# Normaliza los finales de linea: LF en el repositorio, lo que toque en disco.
+# Sin esto, trabajar en Windows y ejecutar en el runner de Linux ensucia cada
+# diff con cambios que no son cambios.
+* text=auto eol=lf
+
+# Los .bat los ejecuta cmd.exe, que necesita CRLF.
+*.bat text eol=crlf
+
+# Binarios: que git no los toque.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.docx binary
+*.sqlite3 binary
