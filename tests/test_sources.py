@@ -225,3 +225,58 @@ async def test_remoteok_ignora_el_aviso_legal(criteria) -> None:
     assert len(offers) == 1
     assert offers[0].salary.currency == "USD"
     assert offers[0].work_mode is WorkMode.REMOTE
+
+
+def test_alternar_reparte_el_cupo_entre_busquedas() -> None:
+    """Concatenar y cortar hacia que la primera busqueda se llevara todo el
+    cupo: asi es como se nos escapo una oferta que si estaba en LinkedIn."""
+    from jobbot.adapters.sources.base import interleave
+
+    primera = ["a1", "a2", "a3", "a4"]
+    segunda = ["b1", "b2"]
+    tercera = ["c1"]
+
+    mezclado = interleave([primera, segunda, tercera])
+
+    assert mezclado == ["a1", "b1", "c1", "a2", "b2", "a3", "a4"]
+    # Con un tope de 3, antes solo entraba la primera busqueda. Ahora entran las tres.
+    assert set(mezclado[:3]) == {"a1", "b1", "c1"}
+
+
+def test_alternar_aguanta_listas_vacias() -> None:
+    from jobbot.adapters.sources.base import interleave
+
+    assert interleave([]) == []
+    assert interleave([[], []]) == []
+    assert interleave([[], ["b1"], []]) == ["b1"]
+
+
+async def test_linkedin_pagina_hasta_agotar(criteria) -> None:
+    """El endpoint de invitado sirve 10 por peticion. Sin paginar, el bot solo
+    veia las diez primeras de cada busqueda."""
+    pagina_llena = "".join(
+        LINKEDIN_CARD.replace("4439920031", str(4439920000 + n)) for n in range(10)
+    )
+    pagina_corta = LINKEDIN_CARD.replace("4439920031", "4439999999")
+
+    class HttpPaginado(FakeHttp):
+        def __init__(self) -> None:
+            super().__init__({})
+            self.starts: list[str] = []
+
+        async def get_text(self, url: str, **kwargs) -> str:
+            if "seeMoreJobPostings" in url:
+                start = str((kwargs.get("params") or {}).get("start", 0))
+                self.starts.append(start)
+                return pagina_llena if start == "0" else pagina_corta
+            return LINKEDIN_DETAIL
+
+    http = HttpPaginado()
+    criteria.search.queries = ["python"]
+    criteria.search.locations = ["Spain"]
+    offers = await LinkedInSource(http, {"pages": 3}).search(criteria)
+
+    # Pide la segunda pagina, y para al ver que viene incompleta.
+    assert http.starts[:2] == ["0", "10"]
+    assert "20" not in http.starts
+    assert len(offers) == 11

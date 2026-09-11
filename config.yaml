@@ -14,8 +14,12 @@ search:
   locations:
     - "Spain"
     - "European Union"
-  # Cuantas ofertas pedir como maximo a cada fuente por query.
+  # Tope por busqueda individual.
   max_results_per_query: 25
+  # Tope de la fuente entera, sumando todas sus busquedas. Antes solo existia
+  # el de arriba y se aplicaba tambien como total, asi que la primera busqueda
+  # agotaba el cupo y las demas no aportaban nada.
+  max_results_per_source: 40
   # Ignora ofertas publicadas hace mas de N dias (si la fuente da la fecha).
   max_age_days: 21
 

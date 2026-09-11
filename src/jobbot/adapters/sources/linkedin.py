@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup
 from ...domain.criteria import Criteria
 from ...domain.models import JobOffer, WorkMode
 from ...domain.salary import parse_salary
-from .base import BaseSource, clean_text, detect_work_mode, parse_posted_at
+from .base import BaseSource, clean_text, detect_work_mode, interleave, parse_posted_at
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,12 @@ _JOB_ID = re.compile(r"urn:li:jobPosting:(\d+)")
 
 # f_TPR: ventana temporal en segundos. r604800 = ultima semana.
 TIME_WINDOWS = {7: "r604800", 14: "r1209600", 30: "r2592000"}
+
+# El endpoint de invitado sirve 10 por peticion, no mas. Sin paginar solo se
+# veian las diez primeras de cada busqueda, y una oferta que rankee baja no
+# aparecia jamas aunque encajara perfectamente.
+PAGE_SIZE = 10
+DEFAULT_PAGES = 3
 
 
 class LinkedInSource(BaseSource):
@@ -42,17 +48,45 @@ class LinkedInSource(BaseSource):
             )
         workplace_types = self.options.get("workplace_types") or ["2", "3"]
         window = self._time_window(criteria.search.max_age_days)
+        pages = int(self.options.get("pages", DEFAULT_PAGES))
 
-        collected: list[JobOffer] = []
+        # Un grupo por busqueda, para luego alternarlos y que ninguna acapare
+        # el cupo de la fuente.
+        groups: list[list[JobOffer]] = []
         for query in self.queries(criteria):
             for location in criteria.search.locations:
-                collected.extend(
-                    await self._search_once(query, location, workplace_types, window, criteria)
+                groups.append(
+                    await self._search_query(
+                        query, location, workplace_types, window, criteria, pages
+                    )
                 )
 
-        unique = self._deduplicate(collected)
-        limit = criteria.search.max_results_per_query
+        unique = self._deduplicate(interleave(groups))
+        limit = criteria.search.max_results_per_source
         return [await self._with_description(offer) for offer in unique[:limit]]
+
+    async def _search_query(
+        self,
+        query: str,
+        location: str,
+        workplace_types: list[str],
+        window: str,
+        criteria: Criteria,
+        pages: int,
+    ) -> list[JobOffer]:
+        """Una busqueda, recorriendo sus paginas hasta agotarlas."""
+        encontradas: list[JobOffer] = []
+        for numero in range(pages):
+            pagina = await self._search_once(
+                query, location, workplace_types, window, criteria, numero * PAGE_SIZE
+            )
+            encontradas.extend(pagina)
+            # Una pagina incompleta significa que no hay mas resultados.
+            if len(pagina) < PAGE_SIZE:
+                break
+            if len(encontradas) >= criteria.search.max_results_per_query:
+                break
+        return encontradas[: criteria.search.max_results_per_query]
 
     @staticmethod
     def _time_window(max_age_days: int) -> str:
@@ -68,13 +102,14 @@ class LinkedInSource(BaseSource):
         workplace_types: list[str],
         window: str,
         criteria: Criteria,
+        start: int = 0,
     ) -> list[JobOffer]:
         params = {
             "keywords": query,
             "location": location,
             "f_WT": ",".join(workplace_types),
             "f_TPR": window,
-            "start": 0,
+            "start": start,
             "sortBy": "DD",
         }
         try:
@@ -88,8 +123,7 @@ class LinkedInSource(BaseSource):
         soup = BeautifulSoup(html, "lxml")
         cards = soup.select("div.base-card")
         offers = [self._parse_card(card) for card in cards]
-        found = [offer for offer in offers if offer is not None]
-        return found[: criteria.search.max_results_per_query]
+        return [offer for offer in offers if offer is not None]
 
     def _parse_card(self, card) -> JobOffer | None:
         urn = card.get("data-entity-urn", "")

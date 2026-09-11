@@ -86,7 +86,7 @@ Probadas contra los portales reales en septiembre de 2026.
 | Fuente | Cómo entra | Estado |
 |---|---|---|
 | Manfred | API pública JSON | La mejor: trae salario y % de remoto en el listado |
-| LinkedIn | Endpoint de invitado, sin login | Funciona; limita si le aprietas |
+| LinkedIn | Endpoint de invitado, sin login | Funciona, pero su ranking esconde ofertas |
 | Tecnoempleo | HTML del buscador | Funciona |
 | InfoJobs | HTML del buscador | Funciona a ratos: corta por IP y tarda en soltar |
 | RemoteOK | API pública JSON | Funciona; ofertas internacionales en USD |
@@ -96,6 +96,14 @@ Probadas contra los portales reales en septiembre de 2026.
 
 Otta es la única que necesita cuenta: Playwright más `jobbot login otta`. Las
 otras seis funcionan sin registrarse en ningún sitio.
+
+**Lo que LinkedIn no te va a dar.** Su endpoint de invitado sirve 10
+resultados por petición, así que el bot pagina para recoger más. Aun así, su
+ranking para búsquedas genéricas deja ofertas fuera del alcance: comprobado
+que una oferta concreta no aparecía en los 100 primeros resultados de
+`backend engineer python`, y sí salía buscando por el nombre de la empresa.
+Ninguna cantidad de páginas arregla eso. Un buscador es un embudo, no una
+garantía.
 
 Una fuente que falla devuelve cero y las demás siguen: nunca tumba la ejecución.
 El resumen de cada pasada te dice cuántas ha traído cada una, así que si una se

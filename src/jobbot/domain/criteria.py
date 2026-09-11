@@ -14,6 +14,7 @@ class SearchCriteria(BaseModel):
     queries: list[str] = Field(default_factory=list)
     locations: list[str] = Field(default_factory=lambda: ["Spain"])
     max_results_per_query: int = 25
+    max_results_per_source: int = 40
     max_age_days: int = 21
 
 

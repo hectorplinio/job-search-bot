@@ -122,6 +122,22 @@ def parse_posted_at(text: str | None, today: date | None = None) -> date | None:
     return None
 
 
+def interleave(groups: list[list[JobOffer]]) -> list[JobOffer]:
+    """Mezcla los resultados de varias busquedas alternandolos.
+
+    Sin esto, concatenar y cortar por el tope hace que la primera busqueda se
+    lleve todo el cupo y las demas no lleguen a entrar nunca. Alternando, cada
+    busqueda aporta sus mejores resultados antes de que nadie aporte el
+    segundo.
+    """
+    mezclado: list[JobOffer] = []
+    for posicion in range(max((len(g) for g in groups), default=0)):
+        for grupo in groups:
+            if posicion < len(grupo):
+                mezclado.append(grupo[posicion])
+    return mezclado
+
+
 class BaseSource(ABC):
     """Contrato comun: `search` puede fallar, `safe_search` no."""
 
