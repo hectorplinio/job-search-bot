@@ -280,3 +280,104 @@ async def test_linkedin_pagina_hasta_agotar(criteria) -> None:
     assert http.starts[:2] == ["0", "10"]
     assert "20" not in http.starts
     assert len(offers) == 11
+
+
+REMOTIVE_PAYLOAD = {
+    "jobs": [
+        {
+            "id": 1,
+            "title": "Senior Backend Engineer (Python)",
+            "company_name": "Acme US",
+            "url": "https://remotive.com/remote-jobs/software-dev/senior-backend-1",
+            "description": "Python, PostgreSQL, AWS and Kubernetes.",
+            "tags": ["python", "aws"],
+            "candidate_required_location": "LATAM, Europe, USA, Canada",
+            "salary": "$90,000 - $120,000",
+            "publication_date": "2026-09-10T08:00:00",
+        },
+        {
+            "id": 2,
+            "title": "Backend Engineer (Python)",
+            "company_name": "Solo Yanquis",
+            "url": "https://remotive.com/remote-jobs/software-dev/solo-2",
+            "description": "Python and Django.",
+            "tags": ["python"],
+            "candidate_required_location": "USA",
+            "salary": "",
+            "publication_date": "2026-09-11T08:00:00",
+        },
+    ]
+}
+
+HIMALAYAS_PAYLOAD = {
+    "jobs": [
+        {
+            "guid": "abc",
+            "title": "Senior Backend Engineer",
+            "companyName": "Remote Co",
+            "applicationLink": "https://himalayas.app/companies/remote-co/jobs/senior-backend",
+            "description": "Python, PostgreSQL, Kubernetes, event-driven microservices.",
+            "excerpt": "Backend role",
+            "categories": ["Backend"],
+            "locationRestrictions": ["Spain", "Portugal", "France"],
+            "minSalary": 80000,
+            "maxSalary": 110000,
+            "currency": "EUR",
+        },
+        {
+            "guid": "def",
+            "title": "Backend Engineer (Python)",
+            "companyName": "US Only Inc",
+            "applicationLink": "https://himalayas.app/x",
+            "description": "Python and AWS.",
+            "categories": ["Backend"],
+            "locationRestrictions": ["United States"],
+        },
+        {
+            "guid": "ghi",
+            "title": "Python Platform Engineer",
+            "companyName": "Sin Limites",
+            "applicationLink": "https://himalayas.app/y",
+            "description": "Python, Kubernetes and PostgreSQL.",
+            "categories": ["Backend"],
+            "locationRestrictions": [],
+        },
+    ]
+}
+
+
+async def test_remotive_descarta_lo_que_es_solo_para_eeuu(criteria) -> None:
+    from jobbot.adapters.sources.remotive import RemotiveSource
+
+    offers = await RemotiveSource(FakeHttp(json_payload=REMOTIVE_PAYLOAD), {}).search(criteria)
+
+    assert [o.company for o in offers] == ["Acme US"]
+    offer = offers[0]
+    assert offer.work_mode is WorkMode.REMOTE
+    assert (offer.salary.minimum, offer.salary.maximum) == (90_000, 120_000)
+    assert offer.salary.currency == "USD"
+
+
+async def test_himalayas_usa_la_lista_de_paises(criteria) -> None:
+    from jobbot.adapters.sources.himalayas import HimalayasSource
+
+    offers = await HimalayasSource(FakeHttp(json_payload=HIMALAYAS_PAYLOAD), {}).search(criteria)
+    empresas = [o.company for o in offers]
+
+    # Espana en la lista entra; lista vacia significa sin restriccion y tambien;
+    # solo Estados Unidos se queda fuera.
+    assert empresas == ["Remote Co", "Sin Limites"]
+    assert (offers[0].salary.minimum, offers[0].salary.maximum) == (80_000, 110_000)
+
+
+def test_elegibilidad_por_pais() -> None:
+    from jobbot.adapters.sources.base import can_work_from
+
+    assert can_work_from("Worldwide") is True
+    assert can_work_from("") is True           # sin restriccion declarada
+    assert can_work_from("Europe") is True
+    assert can_work_from("LATAM, Europe, USA") is True
+    assert can_work_from("Spain, Portugal") is True
+    assert can_work_from("USA") is False
+    assert can_work_from("United States") is False
+    assert can_work_from("USA, Canada, USA timezones") is False

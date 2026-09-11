@@ -91,11 +91,25 @@ Probadas contra los portales reales en septiembre de 2026.
 | InfoJobs | HTML del buscador | Funciona a ratos: corta por IP y tarda en soltar |
 | RemoteOK | API pública JSON | Funciona; ofertas internacionales en USD |
 | We Work Remotely | RSS | Funciona |
+| Remotive | API pública JSON | Empresas de EEUU; su feed libre son 16 ofertas |
+| Himalayas | API pública JSON | Empresas de EEUU; pagina, pero 9 de cada 10 son US only |
 | Otta | Navegador con tu sesión | Funciona: recorre tus matches uno a uno |
 | Glassdoor | HTML del buscador | **Apagada**: 403 por IP a las pocas peticiones |
 
 Otta es la única que necesita cuenta: Playwright más `jobbot login otta`. Las
 otras seis funcionan sin registrarse en ningún sitio.
+
+**Sobre las ofertas de Estados Unidos.** Remotive y Himalayas publican desde
+qué países admiten candidatos, así que el bot descarta las que no puedes
+aceptar antes de puntuarlas. La proporción medida en una pasada real:
+
+```
+120 ofertas revisadas en Himalayas -> 110 solo para EEUU -> 2 aptas
+```
+
+No es un fallo del filtro, es cómo está el mercado. Una empresa estadounidense
+necesita un Employer of Record para contratar en España, y la mayoría no lo
+tiene montado.
 
 **Lo que LinkedIn no te va a dar.** Su endpoint de invitado sirve 10
 resultados por petición, así que el bot pagina para recoger más. Aun así, su

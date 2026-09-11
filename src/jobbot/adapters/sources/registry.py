@@ -8,11 +8,13 @@ from ...domain.criteria import Criteria
 from ..http import HttpClient
 from .base import BaseSource
 from .glassdoor import GlassdoorSource
+from .himalayas import HimalayasSource
 from .infojobs import InfoJobsSource
 from .linkedin import LinkedInSource
 from .manfred import ManfredSource
 from .otta import OttaSource
 from .remoteok import RemoteOkSource
+from .remotive import RemotiveSource
 from .tecnoempleo import TecnoempleoSource
 from .weworkremotely import WeWorkRemotelySource
 
@@ -25,6 +27,8 @@ REGISTRY: dict[str, SourceFactory] = {
     "infojobs": InfoJobsSource,
     "glassdoor": GlassdoorSource,
     "remoteok": RemoteOkSource,
+    "remotive": RemotiveSource,
+    "himalayas": HimalayasSource,
     "weworkremotely": WeWorkRemotelySource,
     "otta": OttaSource,
 }

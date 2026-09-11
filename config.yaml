@@ -213,6 +213,17 @@ sources:
     enabled: false
   remoteok:
     enabled: true
+  remotive:
+    # Empresas de EEUU que contratan en remoto. Publica desde que paises
+    # admiten candidatos, asi que las de solo-EEUU se caen solas.
+    enabled: true
+  himalayas:
+    # Igual que Remotive, pero su restriccion de paises es una lista
+    # explicita: el dato mas fiable para saber si puedes aplicar.
+    enabled: true
+    # 20 ofertas por pagina. Su catalogo pasa de 100.000, pero tres cuartas
+    # partes son solo para Estados Unidos y se descartan al vuelo.
+    pages: 6
   weworkremotely:
     enabled: true
   otta:

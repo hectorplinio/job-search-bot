@@ -122,6 +122,29 @@ def parse_posted_at(text: str | None, today: date | None = None) -> date | None:
     return None
 
 
+# Desde donde puedes trabajar. Algunos portales lo publican como campo
+# propio, que es mucho mas fiable que adivinarlo del texto de la oferta.
+WORLDWIDE_MARKERS = ("worldwide", "anywhere", "global", "any country")
+EUROPE_MARKERS = ("europe", "emea", "european union", "eea")
+
+
+def can_work_from(restriction: str | None, country: str = "spain") -> bool:
+    """Si una oferta remota admite a alguien que vive en `country`.
+
+    Sin restriccion se asume mundial: los portales dejan el campo vacio cuando
+    no limitan. Una oferta que solo diga "USA" se descarta aunque sea remota,
+    porque remota no significa contratable desde aqui.
+    """
+    if not restriction or not restriction.strip():
+        return True
+    texto = restriction.lower()
+    if any(marker in texto for marker in WORLDWIDE_MARKERS):
+        return True
+    if country in texto:
+        return True
+    return any(marker in texto for marker in EUROPE_MARKERS)
+
+
 def interleave(groups: list[list[JobOffer]]) -> list[JobOffer]:
     """Mezcla los resultados de varias busquedas alternandolos.
 
