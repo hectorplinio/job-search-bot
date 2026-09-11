@@ -28,6 +28,12 @@ if not defined TOKEN (
 
 :fin
 echo.
+echo  ------------------------------------------------------------------
+echo   Esto ha sido UNA busqueda suelta y aqui se acaba.
+echo   Para que busque solo cada 4 horas y funcionen los botones de
+echo   las alertas, abre "Arrancar Job Bot (dejar abierto)".
+echo  ------------------------------------------------------------------
+echo.
 pause
 exit /b 0
 
