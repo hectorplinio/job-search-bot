@@ -142,7 +142,7 @@ class SearchJobs:
 
         eligible = [item for item in candidates if item.score.value >= scoring.llm_min_rule_score]
         eligible.sort(key=lambda item: item.score.value, reverse=True)
-        eligible = eligible[: scoring.llm_max_calls_per_run]
+        eligible = eligible[: scoring.llm_max_offers_per_run]
         if not eligible:
             return candidates
 

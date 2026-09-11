@@ -164,8 +164,9 @@ scoring:
   use_llm: true
   # Solo se manda a Claude lo que ya paso el filtro de reglas y saco >= esto.
   llm_min_rule_score: 5
-  # Tope de llamadas al LLM por ejecucion, para acotar el gasto.
-  llm_max_calls_per_run: 15
+  # Cuantas ofertas como maximo evalua Claude en cada ejecucion. Van en
+  # lotes de 6 por llamada, asi que 40 ofertas son 7 llamadas, no 40.
+  llm_max_offers_per_run: 40
 
 sources:
   manfred:
@@ -213,4 +214,9 @@ sources:
 
 telegram:
   # Cuantas ofertas manda como maximo cada ejecucion, de mejor a peor nota.
-  max_alerts_per_run: 12
+  # Con 50 te llegan practicamente todas las que pasan el umbral. No lo
+  # quites del todo: es la red que evita que un fallo te mande 500 mensajes.
+  max_alerts_per_run: 50
+  # Segundos entre mensaje y mensaje. Telegram descarta los envios muy
+  # seguidos en un mismo chat, asi que por debajo de 1 segundo se pierden.
+  delay_between_messages: 1.2

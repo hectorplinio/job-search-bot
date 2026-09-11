@@ -81,7 +81,9 @@ class Container:
 
     def notifier(self) -> TelegramNotifier:
         token, chat_id = self.settings.require_telegram()
-        return TelegramNotifier(token, chat_id)
+        return TelegramNotifier(
+            token, chat_id, delay_seconds=self.criteria.telegram.delay_between_messages
+        )
 
     def writer(self, *, required: bool = True) -> AnthropicWriter | None:
         """Sin ANTHROPIC_API_KEY el bot sigue funcionando, pero solo con

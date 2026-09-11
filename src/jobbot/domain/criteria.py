@@ -48,11 +48,12 @@ class ScoringCriteria(BaseModel):
     notify_threshold: int = 6
     use_llm: bool = True
     llm_min_rule_score: int = 5
-    llm_max_calls_per_run: int = 15
+    llm_max_offers_per_run: int = 40
 
 
 class TelegramCriteria(BaseModel):
-    max_alerts_per_run: int = 12
+    max_alerts_per_run: int = 50
+    delay_between_messages: float = 1.2
 
 
 class Criteria(BaseModel):

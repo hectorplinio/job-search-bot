@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import html
 import logging
 from datetime import date
 
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
-from telegram.error import TelegramError
+from telegram.error import RetryAfter, TelegramError
 
 from ..domain.models import ScoredOffer, WorkMode
 
@@ -81,31 +82,57 @@ def _keyboard(scored: ScoredOffer) -> InlineKeyboardMarkup:
 
 
 class TelegramNotifier:
-    """Implementacion de Notifier sobre la Bot API."""
+    """Implementacion de Notifier sobre la Bot API.
 
-    def __init__(self, token: str, chat_id: str) -> None:
+    Telegram limita a un mensaje por segundo y pico en un mismo chat. Mandar
+    treinta seguidos sin pausa hace que te descarte varios, y ademas llegan
+    todos de golpe y no hay quien los lea. De ahi el ritmo entre envios.
+    """
+
+    def __init__(self, token: str, chat_id: str, *, delay_seconds: float = 1.2) -> None:
         self._bot = Bot(token=token)
         self._chat_id = chat_id
+        self._delay = delay_seconds
+        self._sent_something = False
+
+    async def _pace(self) -> None:
+        """Espera antes de cada mensaje menos el primero."""
+        if self._sent_something and self._delay > 0:
+            await asyncio.sleep(self._delay)
+        self._sent_something = True
+
+    async def _send(self, text: str, reply_markup=None, *, what: str) -> bool:
+        await self._pace()
+        for intento in range(3):
+            try:
+                await self._bot.send_message(
+                    chat_id=self._chat_id,
+                    text=text,
+                    parse_mode=ParseMode.HTML,
+                    disable_web_page_preview=True,
+                    reply_markup=reply_markup,
+                )
+            except RetryAfter as exc:
+                # Telegram dice exactamente cuanto esperar. Hacerle caso es
+                # la diferencia entre recibir 40 ofertas o recibir 25.
+                espera = float(getattr(exc, "retry_after", 5)) + 0.5
+                logger.warning("Telegram pide esperar %.1fs; reintento %s", espera, intento + 1)
+                await asyncio.sleep(espera)
+            except TelegramError:
+                logger.exception("No se pudo enviar %s", what)
+                return False
+            else:
+                return True
+
+        logger.error("Telegram sigue limitando; %s no se envio", what)
+        return False
 
     async def send_offer(self, scored: ScoredOffer) -> None:
-        try:
-            await self._bot.send_message(
-                chat_id=self._chat_id,
-                text=format_offer(scored),
-                parse_mode=ParseMode.HTML,
-                disable_web_page_preview=True,
-                reply_markup=_keyboard(scored),
-            )
-        except TelegramError:
-            logger.exception("No se pudo enviar la oferta %s", scored.offer.url)
+        await self._send(
+            format_offer(scored),
+            reply_markup=_keyboard(scored),
+            what=f"la oferta {scored.offer.url}",
+        )
 
     async def send_text(self, text: str) -> None:
-        try:
-            await self._bot.send_message(
-                chat_id=self._chat_id,
-                text=text,
-                parse_mode=ParseMode.HTML,
-                disable_web_page_preview=True,
-            )
-        except TelegramError:
-            logger.exception("No se pudo enviar el mensaje de texto")
+        await self._send(text, what="el mensaje de texto")

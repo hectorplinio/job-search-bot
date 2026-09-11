@@ -1,6 +1,6 @@
 # Job Search Bot
 
-Busca ofertas de backend en seis portales, las puntúa contra tu perfil y te
+Busca ofertas de backend en siete portales, las puntúa contra tu perfil y te
 manda al Telegram solo las que valen la pena. Le pasas el enlace de una oferta
 y te devuelve la cover letter y el summary del CV adaptados.
 
@@ -88,8 +88,11 @@ Probadas contra los portales reales en septiembre de 2026.
 | InfoJobs | HTML del buscador | Funciona a ratos: corta por IP y tarda en soltar |
 | RemoteOK | API pública JSON | Funciona; ofertas internacionales en USD |
 | We Work Remotely | RSS | Funciona |
+| Otta | Navegador con tu sesión | Funciona: recorre tus matches uno a uno |
 | Glassdoor | HTML del buscador | **Apagada**: 403 por IP a las pocas peticiones |
-| Otta | — | **Apagada**: se fusionó con Welcome to the Jungle y exige login |
+
+Otta es la única que necesita cuenta: Playwright más `jobbot login otta`. Las
+otras seis funcionan sin registrarse en ningún sitio.
 
 Una fuente que falla devuelve cero y las demás siguen: nunca tumba la ejecución.
 El resumen de cada pasada te dice cuántas ha traído cada una, así que si una se
@@ -253,7 +256,7 @@ Cuatro filtros en orden, del más barato al más caro:
 4. **Segunda opinión de Claude**, solo para las que ya pasaron el corte. Devuelve
    la nota final y la frase de "por qué encaja" que ves en Telegram. Va en lotes
    de seis ofertas por llamada y con tope por ejecución
-   (`scoring.llm_max_calls_per_run`).
+   (`scoring.llm_max_offers_per_run`), en lotes de seis ofertas por llamada.
 
 El salario mínimo está en 40.000 € y el objetivo en 50.000 €: por debajo del
 mínimo se descarta, y a partir del objetivo el bloque de salario puntúa al

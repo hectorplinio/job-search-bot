@@ -82,3 +82,40 @@ def test_mensaje_sin_salario_lo_dice() -> None:
     text = format_offer(item)
     assert "no publicado" in text
     assert "Modalidad sin especificar" in text
+
+
+async def test_el_notificador_espacia_los_mensajes() -> None:
+    """Telegram descarta los envios seguidos en un mismo chat. Sin pausa,
+    de 40 ofertas te llegarian 25 y las demas se perderian en silencio."""
+    from jobbot.adapters.telegram_notifier import TelegramNotifier
+
+    esperas: list[float] = []
+    enviados: list[str] = []
+
+    notifier = TelegramNotifier.__new__(TelegramNotifier)
+    notifier._chat_id = "1"
+    notifier._delay = 1.2
+    notifier._sent_something = False
+
+    class BotFalso:
+        async def send_message(self, **kwargs):
+            enviados.append(kwargs["text"])
+
+    notifier._bot = BotFalso()
+
+    async def dormir_falso(segundos: float) -> None:
+        esperas.append(segundos)
+
+    import jobbot.adapters.telegram_notifier as modulo
+
+    original = modulo.asyncio.sleep
+    modulo.asyncio.sleep = dormir_falso
+    try:
+        for _ in range(3):
+            await notifier.send_text("hola")
+    finally:
+        modulo.asyncio.sleep = original
+
+    assert len(enviados) == 3
+    # El primero sale ya; los otros dos esperan su turno.
+    assert esperas == [1.2, 1.2]
