@@ -11,6 +11,7 @@ from .adapters.offer_reader import HtmlOfferReader
 from .adapters.persistence import SqliteOfferRepository
 from .adapters.sources.registry import build_sources
 from .adapters.telegram_notifier import TelegramNotifier
+from .adapters.usage_log import SqliteUsageLog
 from .application.search_jobs import SearchJobs
 from .application.write_documents import WriteDocuments
 from .domain.criteria import Criteria
@@ -52,6 +53,7 @@ class Container:
         self.profile = CandidateProfile.load(self.settings.profile_path)
         self.repository = SqliteOfferRepository(self.settings.db_path)
         self.cookies = CookieStore(self.settings.cookie_path)
+        self.usage = SqliteUsageLog(self.settings.db_path)
         self._http: HttpClient | None = None
 
     def effective_cookies(self) -> dict[str, str]:
@@ -72,6 +74,7 @@ class Container:
             await self._http.__aexit__(*exc_info)
             self._http = None
         self.repository.close()
+        self.usage.close()
 
     @property
     def http(self) -> HttpClient:
@@ -93,7 +96,7 @@ class Container:
                 self.settings.require_anthropic()
             logger.warning("Sin ANTHROPIC_API_KEY: scoring solo por reglas")
             return None
-        return AnthropicWriter(self.settings.anthropic_api_key)
+        return AnthropicWriter(self.settings.anthropic_api_key, usage_log=self.usage)
 
     def reader(self) -> HtmlOfferReader:
         return HtmlOfferReader(self.http)

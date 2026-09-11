@@ -48,6 +48,11 @@ def test_top_pending_ordena_por_nota(tmp_path) -> None:
         pendientes = repository.top_pending(limit=5)
         assert [item.offer.company for item in pendientes] == ["Buena", "Floja"]
 
+        # Y con umbral, la floja no sale: /top no debe mandarte lo que la
+        # busqueda automatica habria descartado por nota baja.
+        buenas = repository.top_pending(limit=5, min_score=8)
+        assert [item.offer.company for item in buenas] == ["Buena"]
+
 
 def test_busqueda_por_prefijo_de_huella(tmp_path) -> None:
     with SqliteOfferRepository(tmp_path / "db.sqlite3") as repository:

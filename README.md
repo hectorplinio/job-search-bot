@@ -52,6 +52,7 @@ jobbot bot                    arranca el bot para hablar con él
 jobbot apply <url>            cover letter + summary de una oferta
 jobbot apply <url> -o out/    y además los guarda en ficheros
 jobbot stats                  qué lleva visto el bot
+jobbot usage                  cuánto llevas gastado en la API de Claude
 jobbot sources                qué fuentes están activas
 jobbot check-sources          prueba cada fuente y dice cuántas devuelve
 jobbot login [portal]         renueva la sesión de un portal con tu cuenta
@@ -68,6 +69,8 @@ En Telegram, con `jobbot bot` corriendo:
 /carta <url>     solo la cover letter
 /summary <url>   solo el summary del CV
 /stats           historial
+/usage           gasto en la API de Claude
+/proxima         cuándo toca la siguiente búsqueda
 ```
 
 También puedes pegarle un enlace a pelo, o el texto de la oferta cuando el
@@ -286,6 +289,11 @@ que se usa en dos sitios:
 
 Con `claude-opus-5` a 5 $/M de entrada y 25 $/M de salida, una ejecución sale
 por céntimos. `jobbot run --no-llm` lo deja a cero.
+
+No hace falta estimarlo a ojo: el bot apunta cada llamada y `jobbot usage`, o
+`/usage` en Telegram, te da el gasto de hoy, del mes y total, más el desglose
+entre puntuar ofertas y escribir candidaturas. Guarda el importe calculado en
+el momento de la llamada, así que un cambio de precios no reescribe el pasado.
 
 ---
 

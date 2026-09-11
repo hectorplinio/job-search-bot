@@ -21,9 +21,9 @@ from telegram.ext import (
 )
 
 from .adapters.offer_reader import UnreadableOffer
-from .adapters.telegram_notifier import format_offer
 from .application.write_documents import extract_url
 from .container import Container
+from .domain.cost import format_cost
 from .domain.models import ApplicationDocuments, JobOffer
 from .settings import Settings
 
@@ -41,6 +41,7 @@ HELP = """\
 /carta &lt;url&gt; - solo la cover letter
 /summary &lt;url&gt; - solo el summary del CV
 /stats - que lleva visto el bot
+/usage - cuanto llevas gastado en la API de Claude
 /proxima - cuando toca la siguiente busqueda automatica
 /ayuda - esto
 
@@ -137,14 +138,58 @@ async def search_now(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def top_pending(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Las mejores pendientes, exactamente igual que una alerta.
+
+    Van por el notificador y no por reply_text: es el unico sitio que engancha
+    los botones de Cover letter y Summary. Mandarlas por otra via las dejaba
+    sin ellos.
+    """
     container = _container(context)
-    pending = container.repository.top_pending(limit=5)
+    umbral = container.criteria.scoring.notify_threshold
+    pending = container.repository.top_pending(limit=5, min_score=umbral)
     if not pending:
-        await update.effective_message.reply_text("No hay ofertas pendientes.")
+        await update.effective_message.reply_text(
+            f"No hay ofertas pendientes con nota {umbral} o mas."
+        )
         return
+
+    notifier = container.notifier()
     for item in pending:
-        await _reply_long(update, format_offer(item))
+        await notifier.send_offer(item)
         container.repository.mark_notified(item.fingerprint)
+
+
+async def usage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Lo que llevas gastado en Claude, contado por el propio bot."""
+    log = _container(context).usage
+    resumen = log.summary()
+
+    lineas = ["💳 <b>Gasto en la API de Claude</b>", ""]
+    for periodo, datos in resumen.items():
+        if datos["llamadas"] == 0:
+            lineas.append(f"<b>{periodo}</b>: nada")
+            continue
+        lineas.append(
+            f"<b>{periodo}</b>: {format_cost(datos['coste'])} "
+            f"· {int(datos['llamadas'])} llamadas "
+            f"· {int(datos['entrada']):,} tokens dentro, "
+            f"{int(datos['salida']):,} fuera".replace(",", ".")
+        )
+
+    por_operacion = log.by_operation()
+    if por_operacion:
+        lineas.append("")
+        lineas.append("<i>En que se va:</i>")
+        for fila in por_operacion:
+            lineas.append(
+                f"  {fila['operation']}: {format_cost(fila['coste'] or 0)} "
+                f"({fila['llamadas']} llamadas)"
+            )
+
+    lineas.append("")
+    lineas.append("<i>Estimado con los precios publicos. El cargo real esta en "
+                  "console.anthropic.com.</i>")
+    await _reply_long(update, "\n".join(lineas))
 
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -286,6 +331,7 @@ def build_application(settings: Settings | None = None) -> Application:
     application.add_handler(CommandHandler("buscar", search_now, filters=only_me))
     application.add_handler(CommandHandler("top", top_pending, filters=only_me))
     application.add_handler(CommandHandler("stats", stats, filters=only_me))
+    application.add_handler(CommandHandler("usage", usage, filters=only_me))
     application.add_handler(CommandHandler("proxima", next_run, filters=only_me))
     application.add_handler(CommandHandler("oferta", offer_command, filters=only_me))
     application.add_handler(CommandHandler("carta", cover_command, filters=only_me))

@@ -113,6 +113,43 @@ def stats() -> None:
 
 
 @app.command()
+def usage() -> None:
+    """Cuanto llevas gastado en la API de Claude."""
+
+    async def _main() -> None:
+        from .domain.cost import format_cost
+
+        async with Container() as container:
+            resumen = container.usage.summary()
+            table = Table("Periodo", "Coste", "Llamadas", "Tokens dentro", "Tokens fuera")
+            for periodo, datos in resumen.items():
+                table.add_row(
+                    periodo,
+                    format_cost(datos["coste"]),
+                    str(int(datos["llamadas"])),
+                    f"{int(datos['entrada']):,}".replace(",", "."),
+                    f"{int(datos['salida']):,}".replace(",", "."),
+                )
+            console.print(table)
+
+            por_operacion = container.usage.by_operation()
+            if por_operacion:
+                detalle = Table("En que se va", "Coste", "Llamadas")
+                for fila in por_operacion:
+                    detalle.add_row(
+                        fila["operation"], format_cost(fila["coste"] or 0), str(fila["llamadas"])
+                    )
+                console.print(detalle)
+
+            console.print(
+                "\n[dim]Estimado con los precios publicos de Anthropic. "
+                "El cargo real esta en console.anthropic.com.[/dim]"
+            )
+
+    _run(_main())
+
+
+@app.command()
 def sources() -> None:
     """Fuentes disponibles y cuales estan activas en config.yaml."""
 

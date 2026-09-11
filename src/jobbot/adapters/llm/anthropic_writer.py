@@ -13,6 +13,7 @@ import logging
 import anthropic
 from pydantic import BaseModel, Field
 
+from ...domain.cost import TokenUsage
 from ...domain.models import ApplicationDocuments, JobOffer, MatchScore
 from ...domain.profile import CandidateProfile
 from .prompts import RATING_SYSTEM, WRITING_SYSTEM, rating_prompt, writing_prompt
@@ -53,10 +54,31 @@ class AnthropicWriter:
         *,
         model: str = DEFAULT_MODEL,
         max_tokens: int = 8000,
+        usage_log=None,
     ) -> None:
         self._client = anthropic.AsyncAnthropic(api_key=api_key)
         self._model = model
         self._max_tokens = max_tokens
+        self._usage_log = usage_log
+
+    def _record(self, response, operation: str) -> None:
+        """Apunta lo gastado. Nunca puede tumbar la llamada que ya salio bien."""
+        if self._usage_log is None:
+            return
+        try:
+            uso = response.usage
+            self._usage_log.record(
+                TokenUsage(
+                    model=self._model,
+                    input_tokens=getattr(uso, "input_tokens", 0) or 0,
+                    output_tokens=getattr(uso, "output_tokens", 0) or 0,
+                    cache_read_tokens=getattr(uso, "cache_read_input_tokens", 0) or 0,
+                    cache_write_tokens=getattr(uso, "cache_creation_input_tokens", 0) or 0,
+                ),
+                operation,
+            )
+        except Exception:  # noqa: BLE001 - contabilidad, no la tarea
+            logger.warning("No pude apuntar el gasto de la llamada", exc_info=True)
 
     async def rate(
         self,
@@ -108,6 +130,7 @@ class AnthropicWriter:
             logger.exception("Claude fallo puntuando un lote; se usan las notas por reglas")
             return fallback
 
+        self._record(response, "puntuar ofertas")
         parsed = response.parsed_output
         if parsed is None:
             return fallback
@@ -140,6 +163,7 @@ class AnthropicWriter:
             messages=[{"role": "user", "content": writing_prompt(offer, profile)}],
             output_format=DocumentsOutput,
         )
+        self._record(response, "escribir candidatura")
         parsed = response.parsed_output
         if parsed is None:
             raise RuntimeError("Claude no devolvio documentos validos para esta oferta")
