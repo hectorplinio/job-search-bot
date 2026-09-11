@@ -216,6 +216,16 @@ sources:
     # navegador, asi que 20 salen por minuto y medio.
     max_jobs: 20
 
+schedule:
+  # El propio bot lanza la busqueda cada X horas mientras esta escuchando.
+  # Asi no hace falta tarea programada ni cron: un unico proceso, y los
+  # botones de las alertas funcionan siempre porque el bot esta vivo.
+  enabled: true
+  every_hours: 4
+  # Margen antes de la primera busqueda al arrancar, para no salir buscando
+  # en el mismo segundo en que enciendes el ordenador.
+  first_run_after_minutes: 3
+
 telegram:
   # Cuantas ofertas manda como maximo cada ejecucion, de mejor a peor nota.
   # Con 50 te llegan practicamente todas las que pasan el umbral. No lo

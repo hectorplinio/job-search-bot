@@ -291,12 +291,28 @@ por céntimos. `jobbot run --no-llm` lo deja a cero.
 
 ## Ejecución periódica
 
-Va en local, con el Programador de tareas de Windows o un cron llamando a
-`jobbot run`. En Windows:
+El propio bot la lleva. Mientras `jobbot bot` está escuchando, lanza la
+búsqueda cada 4 horas por su cuenta. Se configura en `config.yaml`:
 
-```powershell
-schtasks /create /tn "JobBot" /sc hourly /mo 4 /tr "cmd /c cd /d <ruta> && jobbot run"
+```yaml
+schedule:
+  enabled: true
+  every_hours: 4
+  first_run_after_minutes: 3
 ```
+
+Un solo proceso, y eso importa más de lo que parece: los botones de las
+alertas solo responden si el bot está vivo, así que atar las búsquedas a ese
+mismo proceso garantiza que nunca recibas una alerta con botones muertos.
+`/proxima` te dice cuándo toca la siguiente.
+
+En Windows, un acceso directo en la carpeta de Inicio lo arranca al encender.
+El lanzador se relanza solo si el proceso se cae.
+
+La alternativa era una tarea programada llamando a `jobbot run`. Funciona,
+pero son dos cosas que mantener vivas en vez de una, y el `.bat` termina en
+`pause` para que puedas leer el resumen al ejecutarlo a mano, lo que deja una
+ventana abierta en cada disparo automático.
 
 `.github/workflows/job-search.yml` existe pero **con el cron desactivado**, solo
 disparo manual. La razón es que dos fuentes dependen de tu máquina: Otta usa el

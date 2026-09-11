@@ -51,6 +51,12 @@ class ScoringCriteria(BaseModel):
     llm_max_offers_per_run: int = 40
 
 
+class ScheduleCriteria(BaseModel):
+    enabled: bool = True
+    every_hours: float = 4
+    first_run_after_minutes: float = 3
+
+
 class TelegramCriteria(BaseModel):
     max_alerts_per_run: int = 50
     delay_between_messages: float = 1.2
@@ -63,6 +69,7 @@ class Criteria(BaseModel):
     keywords: KeywordCriteria = Field(default_factory=KeywordCriteria)
     exclude: ExclusionCriteria = Field(default_factory=ExclusionCriteria)
     scoring: ScoringCriteria = Field(default_factory=ScoringCriteria)
+    schedule: ScheduleCriteria = Field(default_factory=ScheduleCriteria)
     sources: dict[str, dict] = Field(default_factory=dict)
     telegram: TelegramCriteria = Field(default_factory=TelegramCriteria)
 

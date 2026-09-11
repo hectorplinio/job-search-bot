@@ -7,6 +7,7 @@ esto; el bot es para pedirle cosas tu.
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from telegram import Update
 from telegram.constants import ChatAction, ParseMode
@@ -29,6 +30,7 @@ from .settings import Settings
 logger = logging.getLogger(__name__)
 
 TELEGRAM_LIMIT = 3900
+SEARCH_JOB = "busqueda-periodica"
 
 HELP = """\
 <b>Buscador de ofertas</b>
@@ -39,6 +41,7 @@ HELP = """\
 /carta &lt;url&gt; - solo la cover letter
 /summary &lt;url&gt; - solo el summary del CV
 /stats - que lleva visto el bot
+/proxima - cuando toca la siguiente busqueda automatica
 /ayuda - esto
 
 Tambien puedes pegarme el enlace de una oferta sin mas, o el texto de la
@@ -74,6 +77,49 @@ def _format_documents(offer: JobOffer, documents: ApplicationDocuments) -> tuple
     if documents.highlighted_experience:
         summary += "\n\n<i>Destaca: " + "; ".join(documents.highlighted_experience) + "</i>"
     return cover, summary
+
+
+async def scheduled_search(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """La busqueda periodica, dentro del propio proceso del bot.
+
+    No avisa cuando no encuentra nada: a cuatro pasadas al dia, un "sin
+    novedades" cada vez seria ruido. Las ofertas hablan por si solas.
+    """
+    container = context.application.bot_data["container"]
+    try:
+        report = await container.search_use_case().run()
+    except Exception:  # noqa: BLE001 - un fallo no puede matar el bot
+        logger.exception("La busqueda programada fallo; se reintenta en el proximo turno")
+        return
+    logger.info("Busqueda programada: %s enviadas de %s revisadas",
+                report.notified, report.fetched)
+
+
+async def next_run(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Cuando toca la siguiente busqueda automatica."""
+    queue = context.application.job_queue
+    trabajos = queue.get_jobs_by_name(SEARCH_JOB) if queue is not None else []
+
+    cuando = None
+    if trabajos:
+        # next_t solo existe mientras el planificador corre; fuera de ahi
+        # levanta AttributeError en vez de devolver None.
+        try:
+            cuando = trabajos[0].next_t
+        except AttributeError:
+            cuando = None
+
+    if cuando is None:
+        await update.effective_message.reply_text(
+            "No hay busqueda automatica programada ahora mismo. "
+            "Usa /buscar cuando quieras."
+        )
+        return
+
+    local = cuando.astimezone()
+    await update.effective_message.reply_text(
+        f"Siguiente busqueda automatica: {local:%H:%M} del {local:%d/%m}."
+    )
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -199,7 +245,27 @@ def build_application(settings: Settings | None = None) -> Application:
     async def post_init(application: Application) -> None:
         await container.__aenter__()
         application.bot_data["container"] = container
-        logger.info("Bot listo. Escuchando solo al chat %s", chat_id)
+
+        horario = container.criteria.schedule
+        if horario.enabled and application.job_queue is not None:
+            application.job_queue.run_repeating(
+                scheduled_search,
+                interval=timedelta(hours=horario.every_hours),
+                first=timedelta(minutes=horario.first_run_after_minutes),
+                name=SEARCH_JOB,
+            )
+            logger.info(
+                "Bot listo. Buscara cada %s h; la primera en %s min.",
+                horario.every_hours,
+                horario.first_run_after_minutes,
+            )
+        elif horario.enabled:
+            logger.warning(
+                "Busqueda automatica pedida pero sin JobQueue. Instala: "
+                'pip install "python-telegram-bot[job-queue]"'
+            )
+        else:
+            logger.info("Bot listo. Sin busqueda automatica (schedule.enabled: false).")
 
     async def post_shutdown(_application: Application) -> None:
         await container.__aexit__(None, None, None)
@@ -220,6 +286,7 @@ def build_application(settings: Settings | None = None) -> Application:
     application.add_handler(CommandHandler("buscar", search_now, filters=only_me))
     application.add_handler(CommandHandler("top", top_pending, filters=only_me))
     application.add_handler(CommandHandler("stats", stats, filters=only_me))
+    application.add_handler(CommandHandler("proxima", next_run, filters=only_me))
     application.add_handler(CommandHandler("oferta", offer_command, filters=only_me))
     application.add_handler(CommandHandler("carta", cover_command, filters=only_me))
     application.add_handler(CommandHandler("summary", summary_command, filters=only_me))
