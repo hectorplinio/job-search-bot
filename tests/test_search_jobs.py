@@ -156,8 +156,8 @@ async def test_dry_run_no_deja_rastro_en_el_historial(tmp_path, criteria, profil
 
 
 async def test_el_llm_reemplaza_la_nota_de_reglas(tmp_path, criteria, profile) -> None:
-    # Una oferta sin salario publicado saca menos por reglas; el LLM la sube.
-    offer = make_offer(salary=SalaryRange(), work_mode=WorkMode.HYBRID)
+    # Una oferta sin salario ni modalidad saca menos por reglas; el LLM la sube.
+    offer = make_offer(salary=SalaryRange(), work_mode=WorkMode.UNKNOWN)
     writer = FakeWriter()
     use_case, repository, notifier = build(
         tmp_path, [FakeSource("fake", [offer])], criteria, profile, writer=writer

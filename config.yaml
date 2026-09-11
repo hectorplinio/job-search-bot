@@ -30,8 +30,11 @@ salary:
   accept_unknown: true
 
 work_mode:
-  accepted: [remote, hybrid, unknown]
-  rejected: [onsite]
+  # Hibrido fuera: vives lejos de una capital y no te compensa desplazarte.
+  # "unknown" se queda porque muchas ofertas buenas no declaran modalidad;
+  # si te llega demasiada morralla de ese tipo, quitalo tambien.
+  accepted: [remote, unknown]
+  rejected: [hybrid, onsite]
 
 keywords:
   # La oferta necesita al menos uno de estos para considerarse del perfil.
@@ -128,6 +131,7 @@ exclude:
     - ".net"
     - c#
     - php
+    - java
     - "java developer"
     - "java engineer"
     - ruby

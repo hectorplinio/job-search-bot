@@ -98,10 +98,28 @@ def test_oferta_caducada_se_descarta(criteria) -> None:
     assert score_offer(make_offer(posted_at=old), criteria).is_rejected
 
 
-def test_remoto_puntua_mas_que_hibrido(criteria) -> None:
+def test_hibrido_se_descarta(criteria) -> None:
+    """Vive lejos de una capital: un hibrido en Madrid no le sirve."""
+    score = score_offer(make_offer(work_mode=WorkMode.HYBRID), criteria)
+    assert score.is_rejected
+    assert any("hybrid" in reason for reason in score.blockers)
+
+
+def test_remoto_puntua_mas_que_sin_especificar(criteria) -> None:
     remoto = score_offer(make_offer(work_mode=WorkMode.REMOTE), criteria)
-    hibrido = score_offer(make_offer(work_mode=WorkMode.HYBRID), criteria)
-    assert remoto.value >= hibrido.value
+    sin_saber = score_offer(make_offer(work_mode=WorkMode.UNKNOWN), criteria)
+    assert remoto.value > sin_saber.value
+
+
+def test_titulo_de_java_se_descarta(criteria) -> None:
+    """Se colo un "Senior Java & React Developer": el patron pedia
+    "java developer" y ese titulo no lo tiene."""
+    score = score_offer(make_offer(title="Senior Java & React Developer"), criteria)
+    assert score.is_rejected
+
+    # Pero "java" no puede casar dentro de "javascript".
+    js = score_offer(make_offer(title="Backend Developer JavaScript"), criteria)
+    assert not js.is_rejected
 
 
 def test_limites_de_palabra() -> None:
