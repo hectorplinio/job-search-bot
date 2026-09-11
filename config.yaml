@@ -22,6 +22,9 @@ search:
   max_results_per_source: 40
   # Ignora ofertas publicadas hace mas de N dias (si la fuente da la fecha).
   max_age_days: 21
+  # Salvo en estas fuentes. En la bolsa propia de una empresa solo hay
+  # puestos abiertos, asi que una de hace dos meses sigue vacante.
+  age_exempt_sources: [companies]
 
 salary:
   currency: EUR
@@ -188,6 +191,21 @@ scoring:
   llm_max_offers_per_run: 40
 
 sources:
+  companies:
+    # La fuente mas util: las bolsas de empleo propias de las empresas, leidas
+    # directamente de su Greenhouse o su Ashby. La oferta aparece aqui antes
+    # que en ningun agregador, y trae la ubicacion real, asi que se ve cual es
+    # la version espanola de un puesto que publican por paises.
+    #
+    # Para anadir una empresa, mira la URL de su pagina de empleo:
+    #   job-boards.greenhouse.io/EMPRESA  ->  ats: greenhouse
+    #   jobs.ashbyhq.com/EMPRESA          ->  ats: ashby
+    enabled: true
+    watchlist:
+      # Comprobadas: las tres publican puestos para Espana.
+      - { name: "Grafana Labs", ats: greenhouse, slug: grafanalabs }
+      - { name: "Affirm",       ats: greenhouse, slug: affirm }
+      - { name: "Monzo",        ats: greenhouse, slug: monzo }
   manfred:
     enabled: true
   linkedin:

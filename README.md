@@ -85,7 +85,8 @@ Probadas contra los portales reales en septiembre de 2026.
 
 | Fuente | Cómo entra | Estado |
 |---|---|---|
-| Manfred | API pública JSON | La mejor: trae salario y % de remoto en el listado |
+| Bolsas propias | Greenhouse y Ashby, JSON sin clave | **La mejor**: la oferta aparece aquí antes que en ningún sitio |
+| Manfred | API pública JSON | Muy buena: trae salario y % de remoto en el listado |
 | LinkedIn | Endpoint de invitado, sin login | Funciona, pero su ranking esconde ofertas |
 | Tecnoempleo | HTML del buscador | Funciona |
 | InfoJobs | HTML del buscador | Funciona a ratos: corta por IP y tarda en soltar |
@@ -98,6 +99,25 @@ Probadas contra los portales reales en septiembre de 2026.
 
 Otta es la única que necesita cuenta: Playwright más `jobbot login otta`. Las
 otras seis funcionan sin registrarse en ningún sitio.
+
+**Cómo llegar a empresas extranjeras sin salir de España.** No es ampliando
+las ubicaciones de LinkedIn. Medido: buscando en United Kingdom, Ireland o
+United States, 0 de cada 30 resultados eran accesibles desde España, porque su
+filtro es por dónde *está* el puesto, no por quién puede aplicar.
+
+Lo que sí funciona es leer la bolsa de empleo propia de las empresas. Grafana
+Labs publica el mismo puesto por país, así que ahí aparece la versión española
+que ningún agregador te enseña:
+
+```
+Grafana Labs   125 ofertas en su bolsa  ->  8 para España
+Affirm         203 ofertas              -> 19 para España
+Monzo           69 ofertas              ->  8 entre Barcelona y Madrid
+```
+
+Las empresas se configuran en `sources.companies.watchlist`. Para añadir una,
+mira la URL de su página de empleo: `job-boards.greenhouse.io/EMPRESA` es
+`ats: greenhouse`, y `jobs.ashbyhq.com/EMPRESA` es `ats: ashby`.
 
 **Sobre las ofertas de Estados Unidos.** Remotive y Himalayas publican desde
 qué países admiten candidatos, así que el bot descarta las que no puedes

@@ -79,7 +79,8 @@ def _blockers(offer: JobOffer, criteria: Criteria, today: date) -> list[str]:
     elif not criteria.salary.accept_unknown:
         reasons.append("salario no publicado")
 
-    if offer.posted_at is not None:
+    exenta = offer.source in criteria.search.age_exempt_sources
+    if offer.posted_at is not None and not exenta:
         age = (today - offer.posted_at).days
         if age > criteria.search.max_age_days:
             reasons.append(f"publicada hace {age} dias")

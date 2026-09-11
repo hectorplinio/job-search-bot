@@ -126,6 +126,11 @@ def parse_posted_at(text: str | None, today: date | None = None) -> date | None:
 # propio, que es mucho mas fiable que adivinarlo del texto de la oferta.
 WORLDWIDE_MARKERS = ("worldwide", "anywhere", "global", "any country")
 EUROPE_MARKERS = ("europe", "emea", "european union", "eea")
+# Las bolsas propias escriben la ciudad, no el pais: "Barcelona" a secas.
+SPAIN_MARKERS = (
+    "spain", "espana", "españa", "madrid", "barcelona", "valencia",
+    "sevilla", "bilbao", "malaga", "málaga", "zaragoza", "alicante",
+)
 
 
 def can_work_from(restriction: str | None, country: str = "spain") -> bool:
@@ -140,7 +145,7 @@ def can_work_from(restriction: str | None, country: str = "spain") -> bool:
     texto = restriction.lower()
     if any(marker in texto for marker in WORLDWIDE_MARKERS):
         return True
-    if country in texto:
+    if country in texto or any(marker in texto for marker in SPAIN_MARKERS):
         return True
     return any(marker in texto for marker in EUROPE_MARKERS)
 

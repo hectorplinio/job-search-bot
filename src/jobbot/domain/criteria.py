@@ -16,6 +16,11 @@ class SearchCriteria(BaseModel):
     max_results_per_query: int = 25
     max_results_per_source: int = 40
     max_age_days: int = 21
+    # Fuentes donde la antiguedad no significa nada. En la bolsa propia de una
+    # empresa solo hay puestos abiertos: si sigue publicado a los dos meses, es
+    # que sigue vacante. En un agregador, en cambio, una oferta vieja suele
+    # estar muerta o ser un repost.
+    age_exempt_sources: list[str] = Field(default_factory=lambda: ["companies"])
 
 
 class SalaryCriteria(BaseModel):

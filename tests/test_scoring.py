@@ -149,3 +149,17 @@ def test_remota_mundial_sigue_entrando(criteria) -> None:
         description="Fully remote, anywhere in the world. Python, PostgreSQL, AWS, Kubernetes.",
     )
     assert not score_offer(offer, criteria).is_rejected
+
+
+def test_la_antiguedad_no_cuenta_en_las_bolsas_propias(criteria) -> None:
+    """Una oferta de hace dos meses en un agregador esta muerta. En la bolsa
+    propia de una empresa significa que el puesto sigue vacante."""
+    from datetime import date, timedelta
+
+    vieja = date.today() - timedelta(days=60)
+
+    en_agregador = score_offer(make_offer(source="linkedin", posted_at=vieja), criteria)
+    assert en_agregador.is_rejected
+
+    en_bolsa_propia = score_offer(make_offer(source="companies", posted_at=vieja), criteria)
+    assert not en_bolsa_propia.is_rejected

@@ -7,6 +7,7 @@ from collections.abc import Callable
 from ...domain.criteria import Criteria
 from ..http import HttpClient
 from .base import BaseSource
+from .companies import CompaniesSource
 from .glassdoor import GlassdoorSource
 from .himalayas import HimalayasSource
 from .infojobs import InfoJobsSource
@@ -21,6 +22,7 @@ from .weworkremotely import WeWorkRemotelySource
 SourceFactory = Callable[[HttpClient, dict], BaseSource]
 
 REGISTRY: dict[str, SourceFactory] = {
+    "companies": CompaniesSource,
     "manfred": ManfredSource,
     "linkedin": LinkedInSource,
     "tecnoempleo": TecnoempleoSource,
