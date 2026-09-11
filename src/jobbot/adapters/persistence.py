@@ -128,17 +128,30 @@ class SqliteOfferRepository:
         )
         self._connection.commit()
 
-    def top_pending(self, limit: int = 10) -> list[ScoredOffer]:
+    def top_pending(self, limit: int = 10, min_score: int = 0) -> list[ScoredOffer]:
+        """Lo mejor que esta guardado y aun no te ha llegado.
+
+        Incluye lo de ejecuciones anteriores que se quedo fuera por el tope
+        de mensajes, no solo lo de la pasada actual.
+        """
         rows = self._connection.execute(
             """
             SELECT * FROM offers
-            WHERE notified = 0 AND blockers = '[]'
+            WHERE notified = 0 AND blockers = '[]' AND score >= ?
             ORDER BY score DESC, last_seen DESC
             LIMIT ?
             """,
-            (limit,),
+            (min_score, limit),
         ).fetchall()
         return [self._to_scored(row) for row in rows]
+
+    def count_pending(self, min_score: int = 0) -> int:
+        row = self._connection.execute(
+            "SELECT COUNT(*) AS c FROM offers "
+            "WHERE notified = 0 AND blockers = '[]' AND score >= ?",
+            (min_score,),
+        ).fetchone()
+        return int(row["c"])
 
     def recent(self, limit: int = 10) -> list[ScoredOffer]:
         rows = self._connection.execute(

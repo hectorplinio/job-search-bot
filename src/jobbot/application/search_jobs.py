@@ -25,6 +25,8 @@ class SearchReport:
     rejected: int = 0
     below_threshold: int = 0
     notified: int = 0
+    from_backlog: int = 0
+    still_pending: int = 0
     llm_calls: int = 0
     per_source: dict[str, int] = field(default_factory=dict)
     alerts: list[ScoredOffer] = field(default_factory=list)
@@ -36,8 +38,14 @@ class SearchReport:
                 f"📊 {self.fetched} ofertas revisadas ({sources or 'sin fuentes'})",
                 f"🔁 {self.duplicates} repetidas · 🚫 {self.rejected} descartadas por filtros",
                 f"📉 {self.below_threshold} por debajo del umbral",
-                f"📬 {self.notified} enviadas",
+                f"📬 {self.notified} enviadas"
+                + (f" ({self.from_backlog} pendientes de antes)" if self.from_backlog else ""),
             ]
+            + (
+                [f"⏳ {self.still_pending} en cola para la proxima"]
+                if self.still_pending
+                else []
+            )
         )
 
 
@@ -180,14 +188,29 @@ class SearchJobs:
             logger.info("dry-run: %s ofertas se habrian enviado (historial intacto)", len(alerts))
             return
 
-        alert_ids = {item.fingerprint for item in alerts}
+        # Se guarda todo sin marcar, y despues se decide que mandar leyendo
+        # del historial. Asi entra tambien lo que se quedo en cola en pasadas
+        # anteriores por haber tocado el tope, que si no se perderia para
+        # siempre: ya consta como visto y nunca volveria a entrar por la
+        # deteccion de duplicados.
         for item in candidates:
             self._repository.remember(
                 item,
-                notified=item.fingerprint in alert_ids,
+                notified=False,
                 url_key=self._url_keys.get(item.fingerprint, item.fingerprint),
             )
 
-        for item in alerts:
+        threshold = self._criteria.scoring.notify_threshold
+        cap = self._criteria.telegram.max_alerts_per_run
+        to_send = self._repository.top_pending(limit=cap, min_score=threshold)
+
+        nuevas = {item.fingerprint for item in alerts}
+        for item in to_send:
             await self._notifier.send_offer(item)
+            self._repository.mark_notified(item.fingerprint)
             report.notified += 1
+            if item.fingerprint not in nuevas:
+                report.from_backlog += 1
+
+        report.alerts = to_send
+        report.still_pending = self._repository.count_pending(min_score=threshold)

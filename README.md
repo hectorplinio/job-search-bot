@@ -214,6 +214,16 @@ jobbot login otta
 # y en config.yaml: sources.otta.enabled: true
 ```
 
+**Aviso importante sobre Otta.** Su botón de siguiente no es un "ver la
+siguiente oferta": marca la actual como vista y la saca de tus matches. El bot
+navega con tu sesión, así que consume tu cola igual que si la recorrieras tú.
+Las ofertas te llegan por Telegram con su enlace, pero ya no las verás al
+entrar en la web de Otta.
+
+Es la única fuente con este efecto; las otras seis solo leen. Si prefieres
+revisar Otta a mano, baja `sources.otta.max_jobs` a 5 para que quede cola, o
+ponla en `enabled: false`.
+
 Verificado que el navegador entra y devuelve 598 KB de contenido real donde
 `httpx` recibía una página de 2 KB. Lo que **no** he podido verificar es el
 parseo del listado logueado, porque hace falta tu cuenta. Si `check-sources`

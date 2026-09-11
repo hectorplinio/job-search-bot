@@ -191,3 +191,35 @@ async def test_una_fuente_caida_no_tumba_la_ejecucion(tmp_path, criteria, profil
     assert report.per_source["rota"] == 0
     assert report.notified == 1
     repository.close()
+
+
+async def test_lo_que_corta_el_tope_se_manda_en_la_siguiente_pasada(
+    tmp_path, criteria, profile
+) -> None:
+    """Antes se perdian para siempre: quedaban guardadas como vistas, asi que
+    la deteccion de duplicados impedia que volvieran a entrar nunca."""
+    criteria.telegram.max_alerts_per_run = 1
+    ofertas = [
+        make_offer(external_id=str(i), url=f"https://example.com/{i}", company=f"Empresa{i}")
+        for i in range(3)
+    ]
+    source = FakeSource("fake", ofertas)
+
+    use_case, repository, notifier = build(tmp_path, [source], criteria, profile)
+    primera = await use_case.run()
+
+    assert primera.notified == 1
+    assert primera.still_pending == 2
+
+    # Segunda pasada: la fuente devuelve lo mismo, todo duplicado, y aun asi
+    # sale una de la cola.
+    segunda = await use_case.run()
+    assert segunda.duplicates == 3
+    assert segunda.notified == 1
+    assert segunda.from_backlog == 1
+    assert segunda.still_pending == 1
+
+    # Y no se repite ninguna.
+    urls = [item.offer.url for item in notifier.sent]
+    assert len(urls) == len(set(urls))
+    repository.close()
