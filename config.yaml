@@ -104,6 +104,17 @@ exclude:
     - "trabajo presencial obligatorio"
     - "no se admite teletrabajo"
     - "sin teletrabajo"
+    # Remoto, si, pero solo dentro de EEUU. No puedes aceptarlas desde Espana,
+    # asi que mejor no gastar ni una llamada al LLM en ellas.
+    - "usa only"
+    - "us only"
+    - "united states only"
+    - "must be based in the united states"
+    - "must reside in the united states"
+    - "authorized to work in the us"
+    - "authorized to work in the united states"
+    - "us work authorization"
+    - "must be located in the us"
   # Roles y stacks de otro perfil. Descartan solo si el TITULO no nombra
   # tambien algo de core_title_terms. Sin esto se cuelan cosas como
   # "Senior .NET Full-stack Developer" o "Senior React Native Developer",

@@ -127,3 +127,25 @@ def test_limites_de_palabra() -> None:
     assert contains_term("we use django", "go") is False
     assert contains_term("node.js and typescript", "node.js") is True
     assert contains_term("stack asp.net legacy", ".net") is True
+
+
+def test_remoto_pero_solo_dentro_de_eeuu_se_descarta(criteria) -> None:
+    """Son remotas de verdad, pero no las puede aceptar desde Espana."""
+    offer = make_offer(
+        title="Senior Backend Engineer",
+        description=(
+            "Fully remote role. Python, PostgreSQL and AWS. "
+            "Note: this position is USA Only and you must be authorized to work in the US."
+        ),
+    )
+    score = score_offer(offer, criteria)
+    assert score.is_rejected
+    assert any("texto excluido" in reason for reason in score.blockers)
+
+
+def test_remota_mundial_sigue_entrando(criteria) -> None:
+    offer = make_offer(
+        title="Senior Backend Engineer",
+        description="Fully remote, anywhere in the world. Python, PostgreSQL, AWS, Kubernetes.",
+    )
+    assert not score_offer(offer, criteria).is_rejected
