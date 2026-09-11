@@ -291,18 +291,22 @@ por céntimos. `jobbot run --no-llm` lo deja a cero.
 
 ## Ejecución periódica
 
-`.github/workflows/job-search.yml` lo lanza cada 4 horas de lunes a viernes en
-el plan gratuito de GitHub Actions. Necesitas tres secrets en el repositorio
-(Settings → Secrets and variables → Actions): `TELEGRAM_BOT_TOKEN`,
-`TELEGRAM_CHAT_ID` y `ANTHROPIC_API_KEY`.
+Va en local, con el Programador de tareas de Windows o un cron llamando a
+`jobbot run`. En Windows:
 
-El historial de SQLite viaja en la caché del runner. Sin eso cada ejecución
-empezaría en blanco y te repetiría las mismas ofertas. Si algún día la caché se
-pierde, la primera pasada te mandará ofertas que ya viste una vez, y a partir
-de ahí vuelve a la normalidad.
+```powershell
+schtasks /create /tn "JobBot" /sc hourly /mo 4 /tr "cmd /c cd /d <ruta> && jobbot run"
+```
 
-En local, en vez de Actions, vale el Programador de tareas de Windows o un cron
-llamando a `jobbot run`.
+`.github/workflows/job-search.yml` existe pero **con el cron desactivado**, solo
+disparo manual. La razón es que dos fuentes dependen de tu máquina: Otta usa el
+perfil de navegador con tu sesión, que no sobrevive entre ejecuciones de un
+runner, e InfoJobs corta las IPs de centro de datos. Si aun así lo quieres en
+Actions, descomenta el `schedule`, añade los tres secrets (`TELEGRAM_BOT_TOKEN`,
+`TELEGRAM_CHAT_ID`, `ANTHROPIC_API_KEY`) y cuenta con perder esas dos fuentes.
+
+El historial de SQLite viaja en la caché del runner. Si se pierde, la primera
+pasada repite ofertas que ya viste una vez y luego vuelve a la normalidad.
 
 ---
 

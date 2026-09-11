@@ -1,10 +1,14 @@
 name: Buscar ofertas
 
-# Cada 4 horas entre las 7 y las 21 (hora peninsular en invierno).
-# GitHub usa UTC y la cola de cron gratuita puede retrasarse unos minutos.
+# El cron esta desactivado a proposito. Dos de las fuentes dependen de la
+# maquina del usuario: Otta necesita el perfil de navegador con su sesion, que
+# no sobrevive entre ejecuciones de un runner, e InfoJobs corta las IPs de
+# centro de datos. Ademas, sin secretos configurados cada disparo falla y
+# llena el correo de avisos.
+#
+# La ejecucion periodica va en local con el Programador de tareas de Windows.
+# Aqui queda el disparo manual, util para probar el scraping sin sesion.
 on:
-  schedule:
-    - cron: "0 6,10,14,18 * * 1-5"
   workflow_dispatch:
     inputs:
       dry_run:
