@@ -223,3 +223,33 @@ async def test_lo_que_corta_el_tope_se_manda_en_la_siguiente_pasada(
     urls = [item.offer.url for item in notifier.sent]
     assert len(urls) == len(set(urls))
     repository.close()
+
+
+async def test_los_criterios_se_releen_en_cada_busqueda(tmp_path, criteria, profile, monkeypatch):
+    """Tocar config.yaml obligaba a reiniciar el bot, y es justo el fichero
+    que mas se toca."""
+    import yaml
+
+    from jobbot.container import Container
+
+    config = tmp_path / "config.yaml"
+    config.write_text(yaml.safe_dump({"scoring": {"notify_threshold": 6}}), encoding="utf-8")
+
+    contenedor = Container.__new__(Container)
+    contenedor.settings = type("S", (), {"config_path": config})()
+    contenedor.criteria = __import__(
+        "jobbot.domain.criteria", fromlist=["Criteria"]
+    ).Criteria.load(config)
+    assert contenedor.criteria.scoring.notify_threshold == 6
+
+    config.write_text(yaml.safe_dump({"scoring": {"notify_threshold": 8}}), encoding="utf-8")
+    assert contenedor.reload_criteria() is True
+    assert contenedor.criteria.scoring.notify_threshold == 8
+
+    # Sin cambios, no hace nada.
+    assert contenedor.reload_criteria() is False
+
+    # Y un fichero roto deja los criterios anteriores en pie.
+    config.write_text("esto: no: es: yaml: valido:", encoding="utf-8")
+    assert contenedor.reload_criteria() is False
+    assert contenedor.criteria.scoring.notify_threshold == 8

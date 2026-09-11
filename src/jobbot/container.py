@@ -101,6 +101,25 @@ class Container:
     def reader(self) -> HtmlOfferReader:
         return HtmlOfferReader(self.http)
 
+    def reload_criteria(self) -> bool:
+        """Relee config.yaml. Devuelve si algo cambio.
+
+        Sin esto, tocar los criterios obligaba a reiniciar el bot, y es
+        precisamente lo que mas se toca. Un fichero mal escrito no tumba al
+        bot: se queda con los criterios que ya tenia y avisa.
+        """
+        try:
+            nuevos = Criteria.load(self.settings.config_path)
+        except Exception:  # noqa: BLE001 - un yaml roto no puede parar la busqueda
+            logger.exception("config.yaml no se puede leer; sigo con los criterios anteriores")
+            return False
+
+        if nuevos == self.criteria:
+            return False
+        self.criteria = nuevos
+        logger.info("config.yaml recargado")
+        return True
+
     def sources(self, criteria: Criteria | None = None):
         """Las fuentes activas, ya con cookies y perfil de navegador.
 
@@ -115,6 +134,8 @@ class Container:
         )
 
     def search_use_case(self, *, use_llm: bool = True, notify: bool = True) -> SearchJobs:
+        # Cada busqueda arranca con los criterios que haya ahora en disco.
+        self.reload_criteria()
         return SearchJobs(
             sources=self.sources(),
             repository=self.repository,

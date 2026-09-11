@@ -214,16 +214,19 @@ sources:
   remoteok:
     enabled: true
   remotive:
-    # Empresas de EEUU que contratan en remoto. Publica desde que paises
-    # admiten candidatos, asi que las de solo-EEUU se caen solas.
-    enabled: true
+    # Apagada despues de medirla. Su feed gratuito son 16 ofertas en total, y
+    # las unicas que pasan el filtro son todas de Lemon.io, que ademas ya
+    # aparece por We Work Remotely. Encima cobran por aplicar desde su web.
+    # Coste de mantenerla encendida: una peticion. Valor: cero.
+    enabled: false
   himalayas:
     # Igual que Remotive, pero su restriccion de paises es una lista
     # explicita: el dato mas fiable para saber si puedes aplicar.
     enabled: true
-    # 20 ofertas por pagina. Su catalogo pasa de 100.000, pero tres cuartas
-    # partes son solo para Estados Unidos y se descartan al vuelo.
-    pages: 6
+    # 20 ofertas por pagina. Su catalogo pasa de 100.000, pero nueve de cada
+    # diez son solo para Estados Unidos y se descartan al vuelo, asi que
+    # hace falta leer bastantes paginas para sacar unas pocas aptas.
+    pages: 15
   weworkremotely:
     enabled: true
   otta:

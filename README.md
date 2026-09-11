@@ -91,7 +91,7 @@ Probadas contra los portales reales en septiembre de 2026.
 | InfoJobs | HTML del buscador | Funciona a ratos: corta por IP y tarda en soltar |
 | RemoteOK | API pública JSON | Funciona; ofertas internacionales en USD |
 | We Work Remotely | RSS | Funciona |
-| Remotive | API pública JSON | Empresas de EEUU; su feed libre son 16 ofertas |
+| Remotive | API pública JSON | **Apagada**: su feed libre son 16 ofertas, todas de una agencia |
 | Himalayas | API pública JSON | Empresas de EEUU; pagina, pero 9 de cada 10 son US only |
 | Otta | Navegador con tu sesión | Funciona: recorre tus matches uno a uno |
 | Glassdoor | HTML del buscador | **Apagada**: 403 por IP a las pocas peticiones |
