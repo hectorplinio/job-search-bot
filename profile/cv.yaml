@@ -1,6 +1,6 @@
 # Perfil del candidato. Es la unica fuente de verdad que ve el LLM cuando
 # escribe cover letters y reescribe el summary. Manten esto sincronizado
-# con el CV en docx/pdf.
+# con tu CV (esta en ../CV/, fuera del repo a proposito).
 
 name: Hector Plinio Navarro
 headline: Full Stack Software Developer
