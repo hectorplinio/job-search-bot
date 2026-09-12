@@ -16,11 +16,15 @@ class SearchCriteria(BaseModel):
     max_results_per_query: int = 25
     max_results_per_source: int = 40
     max_age_days: int = 21
-    # Fuentes donde la antiguedad no significa nada. En la bolsa propia de una
-    # empresa solo hay puestos abiertos: si sigue publicado a los dos meses, es
-    # que sigue vacante. En un agregador, en cambio, una oferta vieja suele
-    # estar muerta o ser un repost.
-    age_exempt_sources: list[str] = Field(default_factory=lambda: ["companies"])
+    # Ventana propia para fuentes donde la antiguedad significa otra cosa. En
+    # la bolsa de una empresa un anuncio de dos meses sigue vacante, porque los
+    # cubiertos se retiran. Pero sin tope se cuelan reqs fantasma de un ano.
+    max_age_days_by_source: dict[str, int] = Field(
+        default_factory=lambda: {"companies": 90}
+    )
+
+    def age_limit_for(self, source: str) -> int:
+        return self.max_age_days_by_source.get(source, self.max_age_days)
 
 
 class SalaryCriteria(BaseModel):
@@ -48,6 +52,10 @@ class ExclusionCriteria(BaseModel):
     off_profile_titles: list[str] = Field(default_factory=list)
     core_title_terms: list[str] = Field(default_factory=list)
     soft_veto_stack: list[str] = Field(default_factory=list)
+    # Descarta ofertas con demasiada cola. Solo LinkedIn publica el dato,
+    # asi que null (sin filtro) es lo sensato: si no, las fuentes que no lo
+    # dan quedarian en desventaja sin motivo.
+    max_applicants: int | None = None
 
 
 class CompetitionCriteria(BaseModel):

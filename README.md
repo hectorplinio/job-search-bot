@@ -308,6 +308,13 @@ Cuatro filtros en orden, del más barato al más caro:
    El resultado se convierte a una nota del 1 al 10. Es una función pura, sin
    red ni estado: misma oferta, misma nota.
 
+El bot también lee cuánta gente ha solicitado ya, cuando la fuente lo publica.
+LinkedIn lo pone en la ficha. Llegar de los primeros suma puntos y una cola de
+doscientos resta, porque la misma oferta no vale lo mismo con 6 candidatos que
+con 200. Si quieres el equivalente al filtro de "menos de 10 solicitantes",
+pon un número en `exclude.max_applicants`; viene vacío porque solo LinkedIn da
+el dato y un tope dejaría en desventaja a las demás fuentes.
+
 4. **Segunda opinión de Claude**, solo para las que ya pasaron el corte. Devuelve
    la nota final y la frase de "por qué encaja" que ves en Telegram. Va en lotes
    de seis ofertas por llamada y con tope por ejecución

@@ -22,9 +22,11 @@ search:
   max_results_per_source: 40
   # Ignora ofertas publicadas hace mas de N dias (si la fuente da la fecha).
   max_age_days: 21
-  # Salvo en estas fuentes. En la bolsa propia de una empresa solo hay
-  # puestos abiertos, asi que una de hace dos meses sigue vacante.
-  age_exempt_sources: [companies]
+  # Ventana propia por fuente. En la bolsa de una empresa un anuncio de dos
+  # meses sigue vacante, porque los cubiertos se retiran; pero sin tope se
+  # colaban reqs fantasma de un ano entero.
+  max_age_days_by_source:
+    companies: 90
 
 salary:
   currency: EUR
@@ -166,6 +168,11 @@ exclude:
     - back-end
   # Tecnologias veto: descartan solo si la oferta NO trae stack moderno
   # (Python o Node/TypeScript). Un puesto "PHP + Python" sobrevive.
+  # Tope de solicitantes. Solo LinkedIn publica el dato, asi que dejarlo
+  # vacio es lo razonable: un tope castigaria a las fuentes que no lo dan.
+  # Ponle un numero (30, por ejemplo) si quieres el equivalente al filtro
+  # de "menos de 10 solicitantes" de LinkedIn.
+  max_applicants: null
   soft_veto_stack:
     - php
     - laravel

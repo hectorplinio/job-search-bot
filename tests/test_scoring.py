@@ -151,18 +151,34 @@ def test_remota_mundial_sigue_entrando(criteria) -> None:
     assert not score_offer(offer, criteria).is_rejected
 
 
-def test_la_antiguedad_no_cuenta_en_las_bolsas_propias(criteria) -> None:
-    """Una oferta de hace dos meses en un agregador esta muerta. En la bolsa
-    propia de una empresa significa que el puesto sigue vacante."""
-    from datetime import date, timedelta
+def test_las_bolsas_propias_aguantan_mas_pero_no_infinito(criteria) -> None:
+    """Dos meses en un agregador es una oferta muerta; en la bolsa de una
+    empresa el puesto sigue vacante. Pero un anuncio de un ano es un req
+    fantasma en cualquier sitio."""
+    hace_dos_meses = date.today() - timedelta(days=60)
+    hace_un_ano = date.today() - timedelta(days=365)
 
-    vieja = date.today() - timedelta(days=60)
-
-    en_agregador = score_offer(make_offer(source="linkedin", posted_at=vieja), criteria)
+    en_agregador = score_offer(make_offer(source="linkedin", posted_at=hace_dos_meses), criteria)
     assert en_agregador.is_rejected
+    assert not score_offer(
+        make_offer(source="companies", posted_at=hace_dos_meses), criteria
+    ).is_rejected
+    assert score_offer(make_offer(source="companies", posted_at=hace_un_ano), criteria).is_rejected
 
-    en_bolsa_propia = score_offer(make_offer(source="companies", posted_at=vieja), criteria)
-    assert not en_bolsa_propia.is_rejected
+
+def test_tope_de_solicitantes_opcional(criteria) -> None:
+    """Apagado por defecto: solo LinkedIn publica el dato, y un tope dejaria
+    en desventaja a las fuentes que no lo dan."""
+    con_cola = make_offer(applicants=180)
+    assert not score_offer(con_cola, criteria).is_rejected
+
+    criteria.exclude.max_applicants = 30
+    score = score_offer(con_cola, criteria)
+    assert score.is_rejected
+    assert any("demasiada cola" in r for r in score.blockers)
+
+    # Y una sin dato nunca se bloquea por esto.
+    assert not score_offer(make_offer(), criteria).is_rejected
 
 
 def _oferta_del_monton(**extra):
