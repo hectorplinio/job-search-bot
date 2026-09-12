@@ -64,6 +64,10 @@ class JobOffer:
     work_mode: WorkMode = WorkMode.UNKNOWN
     salary: SalaryRange = field(default_factory=SalaryRange)
     posted_at: date | None = None
+    # Cuantos han solicitado ya, cuando la fuente lo publica. Aplicar el
+    # primer dia a una oferta con 5 candidatos no se parece en nada a
+    # aplicar a la misma con 200.
+    applicants: int | None = None
     tags: tuple[str, ...] = ()
 
     @property

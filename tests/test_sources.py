@@ -381,3 +381,15 @@ def test_elegibilidad_por_pais() -> None:
     assert can_work_from("USA") is False
     assert can_work_from("United States") is False
     assert can_work_from("USA, Canada, USA timezones") is False
+
+
+def test_linkedin_lee_cuantos_han_solicitado() -> None:
+    from jobbot.adapters.sources.linkedin import LinkedInSource
+
+    leer = LinkedInSource._parse_applicants
+    assert leer("Hace 7 horas  Más de 200 solicitudes  Descubre") == 200
+    assert leer("hace 2 horas · 6 solicitudes") == 6
+    assert leer("Over 150 applicants") == 150
+    assert leer("1.200 solicitudes") == 1200
+    # Aproximadamente la mitad de las ofertas no lo publican.
+    assert leer("Hace 3 dias. Jornada completa.") is None

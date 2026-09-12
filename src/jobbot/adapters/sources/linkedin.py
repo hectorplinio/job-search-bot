@@ -34,6 +34,10 @@ TIME_WINDOWS = {7: "r604800", 14: "r1209600", 30: "r2592000"}
 PAGE_SIZE = 10
 DEFAULT_PAGES = 3
 
+# "40 solicitudes", "Mas de 200 solicitudes", "Over 200 applicants". Solo sale
+# en la ficha, y aproximadamente en la mitad de las ofertas.
+_APPLICANTS = re.compile(r"(m[aá]s de|over)?\s*([\d.,]+)\s*(?:solicitud|applicant)", re.I)
+
 
 class LinkedInSource(BaseSource):
     name = "linkedin"
@@ -112,6 +116,10 @@ class LinkedInSource(BaseSource):
             "start": start,
             "sortBy": "DD",
         }
+        # f_AL=true es "Solicitud sencilla": se aplica desde LinkedIn, sin
+        # formularios de terceros. Cambia el conjunto de resultados.
+        if self.options.get("easy_apply_only"):
+            params["f_AL"] = "true"
         try:
             html = await self.http.get_text(
                 SEARCH_URL, params=params, headers=self.auth_headers()
@@ -156,6 +164,19 @@ class LinkedInSource(BaseSource):
             posted_at=parse_posted_at(posted_raw),
         )
 
+    @staticmethod
+    def _parse_applicants(texto: str) -> int | None:
+        """Cuantos han solicitado ya, si la ficha lo dice.
+
+        "Mas de 200" se guarda como 200: para decidir da igual si son 200 o
+        340, lo que importa es que la cola es larga.
+        """
+        match = _APPLICANTS.search(texto)
+        if match is None:
+            return None
+        numero = match.group(2).replace(".", "").replace(",", "")
+        return int(numero) if numero.isdigit() else None
+
     async def _with_description(self, offer: JobOffer) -> JobOffer:
         job_id = offer.external_id.split(":", 1)[1]
         try:
@@ -174,6 +195,10 @@ class LinkedInSource(BaseSource):
         full_text = f"{description} {criteria_text}".strip()
 
         enriched = offer.with_description(full_text)
+
+        solicitantes = self._parse_applicants(soup.get_text(" "))
+        if solicitantes is not None:
+            enriched = replace(enriched, applicants=solicitantes)
 
         # La tarjeta casi nunca trae salario ni modalidad; la ficha si, y ya
         # la hemos descargado. Sin esto casi todas las ofertas de LinkedIn

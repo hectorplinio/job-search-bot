@@ -129,6 +129,24 @@ def _seniority_points(offer: JobOffer) -> tuple[int, str]:
     return round(WEIGHT_SENIORITY * 0.5), "seniority sin especificar"
 
 
+def _competition_points(offer: JobOffer, criteria: Criteria) -> tuple[int, str]:
+    """Premia llegar pronto y castiga la cola.
+
+    Va como modificador y no como bloque propio para no descuadrar el reparto
+    de los otros cuatro: la competencia no cambia si la oferta encaja contigo,
+    cambia tus opciones de que alguien la lea.
+    """
+    if offer.applicants is None:
+        return 0, ""
+
+    ajustes = criteria.scoring.competition
+    if offer.applicants <= ajustes.few_applicants:
+        return ajustes.bonus, f"solo {offer.applicants} solicitudes, llegas pronto"
+    if offer.applicants >= ajustes.many_applicants:
+        return -ajustes.penalty, f"{offer.applicants}+ solicitudes, mucha cola"
+    return 0, f"{offer.applicants} solicitudes"
+
+
 def to_ten(points: int) -> int:
     """Convierte los 100 puntos internos en la nota 1-10 que ves en Telegram."""
     return max(1, min(10, round(points / 10)))
@@ -145,14 +163,17 @@ def score_offer(offer: JobOffer, criteria: Criteria, today: date | None = None) 
     salary_points, salary_reason = _salary_points(offer, criteria)
     mode_points, mode_reason = _work_mode_points(offer)
     seniority_points, seniority_reason = _seniority_points(offer)
+    competition_points, competition_reason = _competition_points(offer, criteria)
 
-    total = stack_points + salary_points + mode_points + seniority_points
+    total = stack_points + salary_points + mode_points + seniority_points + competition_points
     reasons = [
         f"stack coincidente: {', '.join(stack_terms)}" if stack_terms else "stack generico",
         salary_reason,
         mode_reason,
         seniority_reason,
     ]
+    if competition_reason:
+        reasons.append(competition_reason)
     return MatchScore(value=to_ten(total), reasons=tuple(reasons))
 
 

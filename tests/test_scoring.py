@@ -163,3 +163,28 @@ def test_la_antiguedad_no_cuenta_en_las_bolsas_propias(criteria) -> None:
 
     en_bolsa_propia = score_offer(make_offer(source="companies", posted_at=vieja), criteria)
     assert not en_bolsa_propia.is_rejected
+
+
+def _oferta_del_monton(**extra):
+    """Una oferta correcta pero no sobresaliente. La ideal ya saca un 10 y el
+    tope tapa el efecto de cualquier bonificacion."""
+    return make_offer(salary=SalaryRange(), description="Backend con Python y PostgreSQL.", **extra)
+
+
+def test_llegar_pronto_suma_y_la_cola_resta(criteria) -> None:
+    """Lo que hace util el filtro de "menos de 10 solicitantes" de LinkedIn:
+    la misma oferta no vale lo mismo con 6 candidatos que con 200."""
+    sin_dato = score_offer(_oferta_del_monton(), criteria)
+    pronto = score_offer(_oferta_del_monton(applicants=6), criteria)
+    cola = score_offer(_oferta_del_monton(applicants=200), criteria)
+
+    assert pronto.value > sin_dato.value > cola.value
+    assert any("llegas pronto" in r for r in pronto.reasons)
+    assert any("mucha cola" in r for r in cola.reasons)
+
+
+def test_un_numero_intermedio_no_mueve_la_nota(criteria) -> None:
+    sin_dato = score_offer(_oferta_del_monton(), criteria)
+    medio = score_offer(_oferta_del_monton(applicants=60), criteria)
+    assert medio.value == sin_dato.value
+    assert any("60 solicitudes" in r for r in medio.reasons)

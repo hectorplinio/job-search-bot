@@ -54,6 +54,10 @@ def format_offer(scored: ScoredOffer) -> str:
         place.append(_escape(offer.location))
     lines.append(f"📍 {' · '.join(place)}")
     lines.append(f"💰 {_escape(offer.salary.format())}")
+    if offer.applicants is not None:
+        # Un "200+" al lado del titulo cambia la decision de aplicar o no.
+        cuantos = f"{offer.applicants}+" if offer.applicants >= 200 else str(offer.applicants)
+        lines.append(f"👥 {cuantos} solicitudes")
 
     summary = scored.summary or "; ".join(scored.score.reasons)
     if summary:

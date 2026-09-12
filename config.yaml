@@ -189,6 +189,14 @@ scoring:
   # Cuantas ofertas como maximo evalua Claude en cada ejecucion. Van en
   # lotes de 6 por llamada, asi que 40 ofertas son 7 llamadas, no 40.
   llm_max_offers_per_run: 40
+  # LinkedIn publica en la ficha cuanta gente ha solicitado ya. Llegar de los
+  # primeros es de lo que mas mueve la probabilidad de que te lean, asi que
+  # suma; una cola de 200 resta.
+  competition:
+    few_applicants: 25
+    many_applicants: 150
+    bonus: 8
+    penalty: 8
 
 sources:
   companies:
@@ -212,6 +220,10 @@ sources:
     enabled: true
     # 2 = remoto, 3 = hibrido, 1 = presencial
     workplace_types: ["2", "3"]
+    # Solo "Solicitud sencilla", el equivalente al filtro de LinkedIn.
+    # Se aplica sin salir de LinkedIn, pero deja fuera muchas ofertas
+    # buenas que usan su propio ATS. Por eso va apagado.
+    easy_apply_only: false
   tecnoempleo:
     enabled: true
     # solo teletrabajo total o parcial

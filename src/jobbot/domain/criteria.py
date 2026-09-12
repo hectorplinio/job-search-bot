@@ -50,11 +50,21 @@ class ExclusionCriteria(BaseModel):
     soft_veto_stack: list[str] = Field(default_factory=list)
 
 
+class CompetitionCriteria(BaseModel):
+    """Cuanta gente ha solicitado ya. LinkedIn lo publica en la ficha."""
+
+    few_applicants: int = 25
+    many_applicants: int = 150
+    bonus: int = 8
+    penalty: int = 8
+
+
 class ScoringCriteria(BaseModel):
     notify_threshold: int = 6
     use_llm: bool = True
     llm_min_rule_score: int = 5
     llm_max_offers_per_run: int = 40
+    competition: CompetitionCriteria = Field(default_factory=CompetitionCriteria)
 
 
 class ScheduleCriteria(BaseModel):
