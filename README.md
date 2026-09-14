@@ -1,12 +1,14 @@
 # Job Search Bot
 
-Busca ofertas de backend en siete portales, las puntúa contra tu perfil y te
-manda al Telegram solo las que valen la pena. Le pasas el enlace de una oferta
-y te devuelve la cover letter y el summary del CV adaptados.
+Busca ofertas en nueve portales, las puntúa contra tu perfil y te manda al
+Telegram solo las que valen la pena. Le pasas el enlace de una oferta y te
+devuelve la cover letter y el summary del CV adaptados.
 
-Hecho a medida para el perfil de Hector Plinio Navarro (Python, Node/TypeScript,
-microservicios, arquitectura hexagonal). Todo el criterio vive en `config.yaml`
-y `profile/cv.yaml`, así que cambiarlo no toca código.
+Viene configurado para un perfil de backend (Python, Node/TypeScript,
+microservicios, arquitectura hexagonal), pero sirve para cualquier perfil: todo
+el criterio vive en `config.yaml` y `profile/cv.yaml`, así que cambiarlo no toca
+código. Hay un ejemplo completo de otro perfil en [`examples/frontend/`](examples/frontend/)
+y las instrucciones en [Usarlo con tu perfil](#usarlo-con-tu-perfil).
 
 ---
 
@@ -24,9 +26,37 @@ Rellena `.env` con tres cosas:
 
 | Variable | De dónde sale |
 |---|---|
-| `TELEGRAM_BOT_TOKEN` | Habla con [@BotFather](https://t.me/BotFather), `/newbot` |
-| `TELEGRAM_CHAT_ID` | Escríbele algo a tu bot y ejecuta `jobbot chat-id` |
+| `TELEGRAM_BOT_TOKEN` | El token que te da BotFather (ver abajo) |
+| `TELEGRAM_CHAT_ID` | Tu chat, con `jobbot chat-id` (ver abajo) |
 | `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
+
+### Crear el bot de Telegram
+
+Son dos minutos y no hace falta darse de alta en nada más.
+
+1. Abre Telegram y busca **[@BotFather](https://t.me/BotFather)**, la cuenta
+   oficial con la que se crean los bots. Tiene marca de verificado.
+2. Escríbele `/newbot`.
+3. Te pide un **nombre** (el que verás en la lista de chats, por ejemplo
+   `Mis ofertas`) y después un **usuario**, que debe terminar en `bot` y ser
+   único, por ejemplo `ofertas_de_ada_bot`.
+4. Te responde con un token parecido a `8123456789:AAH...`. Cópialo en
+   `TELEGRAM_BOT_TOKEN` dentro de `.env`. **Ese token es una contraseña**: quien
+   lo tenga controla el bot. No lo subas a ningún repositorio.
+5. Busca tu bot por el usuario que le pusiste, abre el chat y pulsa **Iniciar**.
+   Este paso es obligatorio: Telegram no deja que un bot escriba primero.
+6. Escríbele cualquier cosa, por ejemplo `hola`, y ejecuta:
+
+   ```bash
+   jobbot chat-id
+   ```
+
+   Te imprime el identificador de tu chat. Cópialo en `TELEGRAM_CHAT_ID`.
+
+Si `jobbot chat-id` no encuentra nada, es que el bot no tiene mensajes sin
+leer: vuelve a escribirle y repite. Y si ya tienes el bot arrancado con
+`jobbot bot`, párralo antes, porque el proceso que está escuchando se queda con
+los mensajes.
 
 Prueba sin gastar nada ni mandar nada:
 
@@ -454,3 +484,45 @@ Y en `profile/cv.yaml` está lo que ve Claude al escribir: el summary actual, la
 experiencia con sus highlights, y `emphasis_rules`, que decide qué empresa sale
 en primer plano según lo que pida la oferta. Si actualizas el CV en docx,
 actualiza también ese fichero.
+
+---
+
+## Usarlo con tu perfil
+
+El bot no está atado a un perfil de backend. Lo que define "qué es una buena
+oferta" vive entero en dos ficheros de datos, y ninguno de los dos toca código:
+
+| Fichero | Qué decide |
+|---|---|
+| `config.yaml` | Qué se busca, qué se descarta y cuánto pesa cada tecnología |
+| `profile/cv.yaml` | Qué sabe Claude de ti al puntuar y al escribir |
+
+Los dos se pueden apuntar a otro sitio con variables de entorno, así que puedes
+tener varios perfiles sin tocar los tuyos:
+
+```bash
+JOBBOT_CONFIG_PATH=examples/frontend/config.yaml JOBBOT_PROFILE_PATH=examples/frontend/cv.yaml jobbot run --dry-run
+```
+
+En `examples/frontend/` hay un perfil completo de una desarrolladora frontend,
+que sirve de plantilla y de prueba de que esto funciona de verdad: con esos dos
+ficheros, una oferta de "Senior React Engineer" saca un 10 y una de "Backend
+Engineer Python" se descarta.
+
+Para adaptarlo a ti:
+
+1. **`config.yaml`**: cambia `search.queries` por las búsquedas de tu puesto,
+   `keywords.required_any` por lo que una oferta debe mencionar sí o sí, y
+   `keywords.weighted` por tus tecnologías con su peso. En `exclude`,
+   `off_profile_titles` son los puestos de otra especialidad y
+   `core_title_terms` las palabras que rescatan un título mixto.
+2. **`profile/cv.yaml`**: tu summary, tu experiencia con sus highlights, y dos
+   bloques que guían la redacción:
+   - `emphasis_rules`: qué experiencia destacar según lo que mencione la oferta.
+   - `cover_letter_anchors`: `always` es la experiencia que aparece casi
+     siempre, y cada entrada de `when` añade una regla del tipo "si la oferta
+     toca estas palabras, apóyate en esta otra".
+3. Prueba con `jobbot run --dry-run --no-llm`, que no manda nada ni gasta nada.
+
+Los prompts se construyen a partir de ese fichero, así que las cartas hablan de
+tus empresas y de tu stack, no de los de otro.
