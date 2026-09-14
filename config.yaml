@@ -102,6 +102,17 @@ exclude:
     - trainee
     - apprentice
     - "student"
+    # Programas de graduados y becarios: piden titulo universitario
+    # reciente y empiezan dentro de un ano. Se colaban porque el titulo
+    # dice "Software Engineer (Python)" y la trampa esta en el prefijo.
+    - "graduate programme"
+    - "graduate program"
+    - "graduate scheme"
+    - "new grad"
+    - "new-grad"
+    - "internship programme"
+    - "internship program"
+    - "working student"
   # Si el cuerpo de la oferta contiene esto, se descarta.
   description:
     - "100% presencial"
