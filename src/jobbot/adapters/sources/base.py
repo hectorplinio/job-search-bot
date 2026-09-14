@@ -128,8 +128,18 @@ WORLDWIDE_MARKERS = ("worldwide", "anywhere", "global", "any country")
 EUROPE_MARKERS = ("europe", "emea", "european union", "eea")
 # Las bolsas propias escriben la ciudad, no el pais: "Barcelona" a secas.
 SPAIN_MARKERS = (
-    "spain", "espana", "españa", "madrid", "barcelona", "valencia",
-    "sevilla", "bilbao", "malaga", "málaga", "zaragoza", "alicante",
+    "spain",
+    "espana",
+    "españa",
+    "madrid",
+    "barcelona",
+    "valencia",
+    "sevilla",
+    "bilbao",
+    "malaga",
+    "málaga",
+    "zaragoza",
+    "alicante",
 )
 
 

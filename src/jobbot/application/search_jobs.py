@@ -41,11 +41,7 @@ class SearchReport:
                 f"📬 {self.notified} enviadas"
                 + (f" ({self.from_backlog} pendientes de antes)" if self.from_backlog else ""),
             ]
-            + (
-                [f"⏳ {self.still_pending} en cola para la proxima"]
-                if self.still_pending
-                else []
-            )
+            + ([f"⏳ {self.still_pending} en cola para la proxima"] if self.still_pending else [])
         )
 
 

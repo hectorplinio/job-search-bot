@@ -156,7 +156,9 @@ async def test_linkedin_parsea_tarjeta_y_ficha(criteria) -> None:
     assert offer.title == "Backend Developer (Python)"
     assert offer.company == "Acme Logistics"
     assert offer.external_id == "linkedin:4439920031"
-    assert offer.url == "https://es.linkedin.com/jobs/view/backend-developer-python-at-acme-4439920031"
+    assert (
+        offer.url == "https://es.linkedin.com/jobs/view/backend-developer-python-at-acme-4439920031"
+    )
     assert offer.work_mode is WorkMode.REMOTE
     # La tarjeta no trae salario; la ficha si.
     assert offer.salary.minimum == 55_000
@@ -374,7 +376,7 @@ def test_elegibilidad_por_pais() -> None:
     from jobbot.adapters.sources.base import can_work_from
 
     assert can_work_from("Worldwide") is True
-    assert can_work_from("") is True           # sin restriccion declarada
+    assert can_work_from("") is True  # sin restriccion declarada
     assert can_work_from("Europe") is True
     assert can_work_from("LATAM, Europe, USA") is True
     assert can_work_from("Spain, Portugal") is True

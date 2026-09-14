@@ -119,7 +119,5 @@ class CookieStore:
     def usable(self) -> dict[str, str]:
         """Solo las cookies que siguen vivas, listas para la cabecera."""
         return {
-            source: cookie.value
-            for source, cookie in self.load().items()
-            if not cookie.is_expired
+            source: cookie.value for source, cookie in self.load().items() if not cookie.is_expired
         }

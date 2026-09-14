@@ -36,8 +36,10 @@ class FakeWriter:
     async def rate(self, candidates, _profile, *, salary_minimum, salary_target):
         self.calls += 1
         return [
-            (MatchScore(value=9, reasons=("python", "remoto"), source_of_truth="llm"),
-             "Backend Python remoto con el stack que ya usas.")
+            (
+                MatchScore(value=9, reasons=("python", "remoto"), source_of_truth="llm"),
+                "Backend Python remoto con el stack que ya usas.",
+            )
             for _ in candidates
         ]
 
@@ -239,9 +241,9 @@ async def test_los_criterios_se_releen_en_cada_busqueda(tmp_path, criteria, prof
     contenedor.settings = type(
         "S", (), {"config_path": config, "salary_minimum": None, "salary_target": None}
     )()
-    contenedor.criteria = __import__(
-        "jobbot.domain.criteria", fromlist=["Criteria"]
-    ).Criteria.load(config)
+    contenedor.criteria = __import__("jobbot.domain.criteria", fromlist=["Criteria"]).Criteria.load(
+        config
+    )
     assert contenedor.criteria.scoring.notify_threshold == 6
 
     config.write_text(yaml.safe_dump({"scoring": {"notify_threshold": 8}}), encoding="utf-8")

@@ -173,9 +173,7 @@ class BrowserSession:
         """
         cookies = await self.context.cookies()
         relevant = [
-            cookie
-            for cookie in cookies
-            if domain in (cookie.get("domain") or "").lstrip(".")
+            cookie for cookie in cookies if domain in (cookie.get("domain") or "").lstrip(".")
         ]
         if not relevant:
             return "", None

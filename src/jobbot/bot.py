@@ -92,8 +92,7 @@ async def scheduled_search(context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception:  # noqa: BLE001 - un fallo no puede matar el bot
         logger.exception("La busqueda programada fallo; se reintenta en el proximo turno")
         return
-    logger.info("Busqueda programada: %s enviadas de %s revisadas",
-                report.notified, report.fetched)
+    logger.info("Busqueda programada: %s enviadas de %s revisadas", report.notified, report.fetched)
 
 
 async def next_run(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -112,8 +111,7 @@ async def next_run(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if cuando is None:
         await update.effective_message.reply_text(
-            "No hay busqueda automatica programada ahora mismo. "
-            "Usa /buscar cuando quieras."
+            "No hay busqueda automatica programada ahora mismo. Usa /buscar cuando quieras."
         )
         return
 
@@ -187,8 +185,9 @@ async def usage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             )
 
     lineas.append("")
-    lineas.append("<i>Estimado con los precios publicos. El cargo real esta en "
-                  "console.anthropic.com.</i>")
+    lineas.append(
+        "<i>Estimado con los precios publicos. El cargo real esta en console.anthropic.com.</i>"
+    )
     await _reply_long(update, "\n".join(lineas))
 
 
@@ -198,8 +197,14 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await _reply_long(update, "📊 <b>Historial</b>\n" + "\n".join(lines))
 
 
-async def _documents_for(update: Update, context: ContextTypes.DEFAULT_TYPE, raw: str,
-                         *, want_cover: bool, want_summary: bool) -> None:
+async def _documents_for(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    raw: str,
+    *,
+    want_cover: bool,
+    want_summary: bool,
+) -> None:
     message = update.effective_message
     if not raw.strip():
         await message.reply_text("Pasame el enlace de la oferta o pega su texto.")
@@ -316,11 +321,7 @@ def build_application(settings: Settings | None = None) -> Application:
         await container.__aexit__(None, None, None)
 
     application = (
-        Application.builder()
-        .token(token)
-        .post_init(post_init)
-        .post_shutdown(post_shutdown)
-        .build()
+        Application.builder().token(token).post_init(post_init).post_shutdown(post_shutdown).build()
     )
 
     # Solo tu chat. Sin esto, cualquiera que encuentre el bot gasta tu cuota
@@ -337,9 +338,7 @@ def build_application(settings: Settings | None = None) -> Application:
     application.add_handler(CommandHandler("carta", cover_command, filters=only_me))
     application.add_handler(CommandHandler("summary", summary_command, filters=only_me))
     application.add_handler(CallbackQueryHandler(button))
-    application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND & only_me, free_text)
-    )
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & only_me, free_text))
     return application
 
 

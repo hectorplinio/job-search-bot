@@ -50,9 +50,7 @@ class RemotiveSource(BaseSource):
             offers.append(self._to_offer(row))
 
         if fuera_de_alcance:
-            logger.info(
-                "Remotive: %s ofertas no admiten candidatos desde Espana", fuera_de_alcance
-            )
+            logger.info("Remotive: %s ofertas no admiten candidatos desde Espana", fuera_de_alcance)
 
         offers.sort(key=lambda offer: offer.posted_at or date.min, reverse=True)
         return offers[: criteria.search.max_results_per_source]

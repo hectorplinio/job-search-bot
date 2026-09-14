@@ -51,8 +51,10 @@ class WeWorkRemotelySource(BaseSource):
             offer = self._parse_item(item)
             if offer is None:
                 continue
-            if any(contains_term(offer.searchable_text, term)
-                   for term in criteria.keywords.required_any):
+            if any(
+                contains_term(offer.searchable_text, term)
+                for term in criteria.keywords.required_any
+            ):
                 offers.append(offer)
         return offers
 

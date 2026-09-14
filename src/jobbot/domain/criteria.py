@@ -19,9 +19,7 @@ class SearchCriteria(BaseModel):
     # Ventana propia para fuentes donde la antiguedad significa otra cosa. En
     # la bolsa de una empresa un anuncio de dos meses sigue vacante, porque los
     # cubiertos se retiran. Pero sin tope se cuelan reqs fantasma de un ano.
-    max_age_days_by_source: dict[str, int] = Field(
-        default_factory=lambda: {"companies": 90}
-    )
+    max_age_days_by_source: dict[str, int] = Field(default_factory=lambda: {"companies": 90})
 
     def age_limit_for(self, source: str) -> int:
         return self.max_age_days_by_source.get(source, self.max_age_days)

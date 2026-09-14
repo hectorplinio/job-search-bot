@@ -45,9 +45,7 @@ class HtmlOfferReader:
 
         soup = BeautifulSoup(html, "lxml")
         posting = self._json_ld_job_posting(soup)
-        offer = (
-            self._from_json_ld(posting, url) if posting else self._from_plain_html(soup, url)
-        )
+        offer = self._from_json_ld(posting, url) if posting else self._from_plain_html(soup, url)
         if not offer.title:
             raise UnreadableOffer(f"No encontre ninguna oferta en {url}")
         return offer

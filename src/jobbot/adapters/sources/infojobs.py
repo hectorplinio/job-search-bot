@@ -35,9 +35,7 @@ class InfoJobsSource(BaseSource):
     async def _search_once(self, query: str, criteria: Criteria) -> list[JobOffer]:
         params = {"keyword": query, "sortBy": "PUBLICATION_DATE", "page": 1}
         try:
-            html = await self.http.get_text(
-                SEARCH_URL, params=params, headers=self.auth_headers()
-            )
+            html = await self.http.get_text(SEARCH_URL, params=params, headers=self.auth_headers())
         except Exception:  # noqa: BLE001
             logger.debug("InfoJobs fallo con la query %r", query)
             return []

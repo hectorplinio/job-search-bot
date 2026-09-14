@@ -1,9 +1,9 @@
 """Interfaz de linea de comandos.
 
-    jobbot run            una pasada de busqueda (esto es lo que ejecuta el cron)
-    jobbot bot            arranca el bot en modo escucha
-    jobbot apply <url>    cover letter + summary para una oferta concreta
-    jobbot stats          que lleva visto el bot
+jobbot run            una pasada de busqueda (esto es lo que ejecuta el cron)
+jobbot bot            arranca el bot en modo escucha
+jobbot apply <url>    cover letter + summary para una oferta concreta
+jobbot stats          que lleva visto el bot
 """
 
 from __future__ import annotations
@@ -47,8 +47,10 @@ def run(
 
             console.print(result.as_text())
             for item in result.alerts:
-                console.print(f"  [green]{item.score.value}/10[/green] {item.offer.title} "
-                              f"· {item.offer.company} · {item.offer.url}")
+                console.print(
+                    f"  [green]{item.score.value}/10[/green] {item.offer.title} "
+                    f"· {item.offer.company} · {item.offer.url}"
+                )
 
             if report and not dry_run and result.notified == 0:
                 await container.notifier().send_text(
@@ -90,9 +92,7 @@ def apply(
                 (output / f"{slug}-cover-letter.txt").write_text(
                     documents.cover_letter, encoding="utf-8"
                 )
-                (output / f"{slug}-summary.txt").write_text(
-                    documents.cv_summary, encoding="utf-8"
-                )
+                (output / f"{slug}-summary.txt").write_text(documents.cv_summary, encoding="utf-8")
                 console.print(f"\n[green]Guardado en {output}[/green]")
 
     _run(_main())

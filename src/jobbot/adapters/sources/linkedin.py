@@ -121,9 +121,7 @@ class LinkedInSource(BaseSource):
         if self.options.get("easy_apply_only"):
             params["f_AL"] = "true"
         try:
-            html = await self.http.get_text(
-                SEARCH_URL, params=params, headers=self.auth_headers()
-            )
+            html = await self.http.get_text(SEARCH_URL, params=params, headers=self.auth_headers())
         except Exception:  # noqa: BLE001 - una query fallida no invalida el resto
             logger.debug("LinkedIn rechazo la query %r en %r", query, location)
             return []
@@ -159,8 +157,9 @@ class LinkedInSource(BaseSource):
             url=link["href"].split("?")[0],
             location=location,
             work_mode=detect_work_mode(location, clean_text(title.get_text())),
-            salary=parse_salary(clean_text(salary_tag.get_text()) if salary_tag else None,
-                                require_context=False),
+            salary=parse_salary(
+                clean_text(salary_tag.get_text()) if salary_tag else None, require_context=False
+            ),
             posted_at=parse_posted_at(posted_raw),
         )
 
