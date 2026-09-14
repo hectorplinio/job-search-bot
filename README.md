@@ -443,6 +443,23 @@ corren sin red.
 
 ---
 
+## Comandos de desarrollo
+
+Están en el `Makefile`, así que la CI ejecuta exactamente lo mismo que tú:
+
+```bash
+make install-dev   # instala el bot y las herramientas
+make check         # lint + formato + tests + carga de configuración
+make dry-run       # una búsqueda que no manda nada ni gasta en LLM
+make bot           # arranca el bot escuchando en Telegram
+make help          # el resto
+```
+
+En Windows no viene `make`. Se instala con `winget install GnuWin32.Make`, o
+puedes copiar el comando de la receta que necesites.
+
+---
+
 ## Tests
 
 Los ejecuta también la CI en cada push y en cada pull request, con Python
