@@ -1,0 +1,42 @@
+version: 2
+
+# Una revision por semana. Las minor y las patch llegan juntas en un solo PR,
+# porque revisarlas de una en una es ruido: si la CI pasa, entran. Las major
+# vienen sueltas a proposito, que son las que rompen cosas y hay que leer el
+# changelog antes de mezclarlas.
+
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps
+      prefix-development: deps-dev
+    labels: [dependencies]
+    groups:
+      # Todo lo que no sea un salto de version mayor, en un unico PR.
+      rutina:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  # Las actions tambien caducan: una v4 sin actualizar acaba fallando sola
+  # cuando GitHub retira la version del runner.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Madrid
+    commit-message:
+      prefix: ci
+    labels: [dependencies]
+    groups:
+      rutina:
+        patterns: ["*"]
+        update-types: [minor, patch]

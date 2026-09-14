@@ -29,6 +29,12 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 filterwarnings = ["ignore::DeprecationWarning"]
 
+[tool.black]
+# La misma anchura que ruff: dos formateadores con reglas distintas se
+# reformatean el codigo el uno al otro en cada commit.
+line-length = 100
+target-version = ["py311"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

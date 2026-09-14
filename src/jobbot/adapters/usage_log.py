@@ -99,9 +99,7 @@ class SqliteUsageLog:
 
     def by_operation(self) -> list[sqlite3.Row]:
         """En que se va el dinero: puntuar ofertas o escribir candidaturas."""
-        return self._connection.execute(
-            """
+        return self._connection.execute("""
             SELECT operation, COUNT(*) AS llamadas, SUM(cost_usd) AS coste
             FROM llm_usage GROUP BY operation ORDER BY coste DESC
-            """
-        ).fetchall()
+            """).fetchall()

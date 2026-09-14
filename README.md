@@ -1,5 +1,9 @@
 # Job Search Bot
 
+[![CI](https://github.com/hectorplinio/job-search-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/hectorplinio/job-search-bot/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Busca ofertas en nueve portales, las puntúa contra tu perfil y te manda al
 Telegram solo las que valen la pena. Le pasas el enlace de una oferta y te
 devuelve la cover letter y el summary del CV adaptados.
@@ -440,6 +444,14 @@ corren sin red.
 ---
 
 ## Tests
+
+Los ejecuta también la CI en cada push y en cada pull request, con Python
+3.11 y 3.12, junto a `ruff check`, `flake8` y `black --check`. No hacen falta
+secretos: ninguna prueba toca la red.
+
+El formateador de referencia es Black. `ruff format` no se usa: discrepa con
+Black en los literales multilínea y dos formateadores acaban reescribiéndose
+el código el uno al otro.
 
 ```bash
 pip install -r requirements-dev.txt

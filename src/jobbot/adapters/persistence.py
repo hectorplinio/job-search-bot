@@ -175,16 +175,14 @@ class SqliteOfferRepository:
         return self._to_scored(row) if row else None
 
     def stats(self) -> dict[str, int]:
-        totals = self._connection.execute(
-            """
+        totals = self._connection.execute("""
             SELECT
                 COUNT(*)                                   AS vistas,
                 SUM(CASE WHEN notified = 1 THEN 1 ELSE 0 END) AS enviadas,
                 SUM(CASE WHEN blockers != '[]' THEN 1 ELSE 0 END) AS descartadas,
                 COALESCE(MAX(score), 0)                    AS mejor_nota
             FROM offers
-            """
-        ).fetchone()
+            """).fetchone()
         # sqlite3.Row itera valores, no claves: .keys() no es redundante aqui.
         result = {key: int(totals[key] or 0) for key in totals.keys()}  # noqa: SIM118
 
