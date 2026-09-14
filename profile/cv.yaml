@@ -43,7 +43,7 @@ experience:
     role: Full Stack Software Developer
     location: Madrid
     start: 2024-10
-    end: null
+    end: 2026-09
     stack: [Python, Litestar, Kubernetes, ArgoCD, ClickHouse, PostgreSQL, Celery, Redis, React, TypeScript, AWS]
     highlights:
       - >-
@@ -168,7 +168,12 @@ emphasis_rules:
   tdd: [ascend_makers]
 
 # Anclas que la cover letter debe intentar usar cuando la oferta lo justifique.
+# Que experiencia destacar en la carta. Son ids de `experience`, asi que el
+# prompt no nombra ninguna empresa: cambia este bloque y sirve para otro perfil.
 cover_letter_anchors:
   always: ascend_makers
-  ai_or_llm: telefonica
-  node_or_typescript: jobandtalent
+  when:
+    - keywords: [ia, llm, openai, nlp, machine learning]
+      experience: telefonica
+    - keywords: [node.js, nodejs, typescript]
+      experience: jobandtalent

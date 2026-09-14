@@ -1,0 +1,288 @@
+# Criterios de ejemplo para un perfil de frontend. Demuestra que todo lo que
+# define "que es una buena oferta" vive en este fichero y en profile/cv.yaml.
+#
+#   JOBBOT_CONFIG_PATH=examples/frontend/config.yaml
+#   JOBBOT_PROFILE_PATH=examples/frontend/cv.yaml
+#   jobbot run --dry-run
+#
+
+search:
+  # Cada query se lanza contra cada fuente que la soporte.
+  queries:
+    - "frontend engineer react"
+    - "react developer"
+    - "typescript frontend"
+    - "next.js developer"
+    - "design system engineer"
+  # Solo aplica a las fuentes con filtro geografico (LinkedIn, Glassdoor).
+  locations:
+    - "Spain"
+    - "European Union"
+  # Tope por busqueda individual.
+  max_results_per_query: 25
+  # Tope de la fuente entera, sumando todas sus busquedas. Antes solo existia
+  # el de arriba y se aplicaba tambien como total, asi que la primera busqueda
+  # agotaba el cupo y las demas no aportaban nada.
+  max_results_per_source: 40
+  # Ignora ofertas publicadas hace mas de N dias (si la fuente da la fecha).
+  max_age_days: 21
+  # Ventana propia por fuente. En la bolsa de una empresa un anuncio de dos
+  # meses sigue vacante, porque los cubiertos se retiran; pero sin tope se
+  # colaban reqs fantasma de un ano entero.
+  max_age_days_by_source:
+    companies: 90
+
+salary:
+  currency: EUR
+  # Por debajo de esto se descarta la oferta.
+  minimum: 40000
+  # A partir de aqui la oferta puntua al maximo en el bloque de salario.
+  target: 50000
+  # Muchas ofertas no publican salario. Si es false, se descartan todas
+  # las que no lo indiquen (te quedaras con muy pocas).
+  accept_unknown: true
+
+work_mode:
+  # Hibrido fuera: vives lejos de una capital y no te compensa desplazarte.
+  # "unknown" se queda porque muchas ofertas buenas no declaran modalidad;
+  # si te llega demasiada morralla de ese tipo, quitalo tambien.
+  accepted: [remote, unknown]
+  rejected: [hybrid, onsite]
+
+keywords:
+  # La oferta necesita al menos uno de estos para considerarse del perfil.
+  required_any:
+    - react
+    - typescript
+    - javascript
+    - frontend
+  # Peso de cada tecnologia en el scoring (0-10).
+  weighted:
+    react: 10
+    typescript: 9
+    javascript: 7
+    next.js: 7
+    remix: 5
+    astro: 4
+    "design system": 8
+    storybook: 5
+    tailwind: 5
+    css: 4
+    accessibility: 7
+    accesibilidad: 7
+    wcag: 6
+    playwright: 5
+    cypress: 4
+    vitest: 4
+    jest: 4
+    graphql: 4
+    "web performance": 6
+    node.js: 4
+
+exclude:
+  # Si el titulo contiene cualquiera de estos, se descarta.
+  titles:
+    - junior
+    - jr.
+    - intern
+    - internship
+    - becario
+    - practicas
+    - prácticas
+    - trainee
+    - apprentice
+    - "student"
+    # Programas de graduados y becarios: piden titulo universitario
+    # reciente y empiezan dentro de un ano. Se colaban porque el titulo
+    # dice "Software Engineer (Python)" y la trampa esta en el prefijo.
+    - "graduate programme"
+    - "graduate program"
+    - "graduate scheme"
+    - "new grad"
+    - "new-grad"
+    - "internship programme"
+    - "internship program"
+    - "working student"
+  # Si el cuerpo de la oferta contiene esto, se descarta.
+  description:
+    - "100% presencial"
+    - "totalmente presencial"
+    - "trabajo presencial obligatorio"
+    - "no se admite teletrabajo"
+    - "sin teletrabajo"
+    # Remoto, si, pero solo dentro de EEUU. No puedes aceptarlas desde Espana,
+    # asi que mejor no gastar ni una llamada al LLM en ellas.
+    - "usa only"
+    - "us only"
+    - "united states only"
+    - "must be based in the united states"
+    - "must reside in the united states"
+    - "authorized to work in the us"
+    - "authorized to work in the united states"
+    - "us work authorization"
+    - "must be located in the us"
+  # Roles y stacks de otro perfil. Descartan solo si el TITULO no nombra
+  # tambien algo de core_title_terms. Sin esto se cuelan cosas como
+  # "Senior .NET Full-stack Developer" o "Senior React Native Developer",
+  # que puntuaban alto porque la descripcion listaba medio ecosistema.
+  off_profile_titles:
+    - backend
+    - back-end
+    - devops
+    - sre
+    - "data scientist"
+    - "data analyst"
+    - "machine learning engineer"
+    - qa
+    - tester
+    - "scrum master"
+    - "product manager"
+    - "product owner"
+    - sap
+    - salesforce
+    - wordpress
+    - php
+    - java
+    - ".net"
+    - c#
+    - android
+    - ios
+  # Lo que rescata un titulo de la lista de arriba. A proposito NO incluye
+  # "full stack": un ".NET Full-stack" sigue siendo una oferta de .NET.
+  core_title_terms:
+    - react
+    - frontend
+    - front-end
+    - typescript
+    - javascript
+    - "ui engineer"
+  # Tecnologias veto: descartan solo si la oferta NO trae stack moderno
+  # (Python o Node/TypeScript). Un puesto "PHP + Python" sobrevive.
+  # Tope de solicitantes. Solo LinkedIn publica el dato, asi que dejarlo
+  # vacio es lo razonable: un tope castigaria a las fuentes que no lo dan.
+  # Ponle un numero (30, por ejemplo) si quieres el equivalente al filtro
+  # de "menos de 10 solicitantes" de LinkedIn.
+  max_applicants: null
+  soft_veto_stack:
+    - angularjs
+    - jquery
+    - wordpress
+    - drupal
+    - sharepoint
+
+scoring:
+  # Nota minima (1-10) para que el bot te mande la oferta.
+  notify_threshold: 6
+  # Reevaluar con Claude las ofertas que superen el umbral de reglas.
+  # Cuesta dinero (unos centimos por ejecucion), pero mejora mucho la nota
+  # y escribe el "por que encaja" que ves en Telegram.
+  use_llm: true
+  # Solo se manda a Claude lo que ya paso el filtro de reglas y saco >= esto.
+  llm_min_rule_score: 5
+  # Cuantas ofertas como maximo evalua Claude en cada ejecucion. Van en
+  # lotes de 6 por llamada, asi que 40 ofertas son 7 llamadas, no 40.
+  llm_max_offers_per_run: 40
+  # LinkedIn publica en la ficha cuanta gente ha solicitado ya. Llegar de los
+  # primeros es de lo que mas mueve la probabilidad de que te lean, asi que
+  # suma; una cola de 200 resta.
+  competition:
+    few_applicants: 25
+    many_applicants: 150
+    bonus: 8
+    penalty: 8
+
+sources:
+  companies:
+    # La fuente mas util: las bolsas de empleo propias de las empresas, leidas
+    # directamente de su Greenhouse o su Ashby. La oferta aparece aqui antes
+    # que en ningun agregador, y trae la ubicacion real, asi que se ve cual es
+    # la version espanola de un puesto que publican por paises.
+    #
+    # Para anadir una empresa, mira la URL de su pagina de empleo:
+    #   job-boards.greenhouse.io/EMPRESA  ->  ats: greenhouse
+    #   jobs.ashbyhq.com/EMPRESA          ->  ats: ashby
+    enabled: true
+    watchlist:
+      # Comprobadas: las tres publican puestos para Espana.
+      - { name: "Grafana Labs", ats: greenhouse, slug: grafanalabs }
+      - { name: "Affirm",       ats: greenhouse, slug: affirm }
+      - { name: "Monzo",        ats: greenhouse, slug: monzo }
+  manfred:
+    enabled: true
+  linkedin:
+    enabled: true
+    # 2 = remoto, 3 = hibrido, 1 = presencial
+    workplace_types: ["2", "3"]
+    # Solo "Solicitud sencilla", el equivalente al filtro de LinkedIn.
+    # Se aplica sin salir de LinkedIn, pero deja fuera muchas ofertas
+    # buenas que usan su propio ATS. Por eso va apagado.
+    easy_apply_only: false
+  tecnoempleo:
+    enabled: true
+    # solo teletrabajo total o parcial
+    telework_only: true
+    # Su buscador es por tecnologia, no por frase: dos terminos cubren mas
+    # que seis frases largas, y le pegamos menos.
+    queries: ["react", "javascript", "typescript"]
+  infojobs:
+    enabled: true
+    # InfoJobs corta por IP si le encadenas muchas busquedas seguidas.
+    # Con dos consultas amplias aguanta.
+    queries: ["react", "frontend"]
+  glassdoor:
+    # Apagada de salida: sin sesion responde 403 a las pocas peticiones.
+    # Pon GLASSDOOR_COOKIE en .env, ejecuta `jobbot check-sources` y, si
+    # devuelve ofertas, cambia esto a true.
+    enabled: false
+  remoteok:
+    enabled: true
+  remotive:
+    # Apagada despues de medirla. Su feed gratuito son 16 ofertas en total, y
+    # las unicas que pasan el filtro son todas de Lemon.io, que ademas ya
+    # aparece por We Work Remotely. Encima cobran por aplicar desde su web.
+    # Coste de mantenerla encendida: una peticion. Valor: cero.
+    enabled: false
+  himalayas:
+    # Igual que Remotive, pero su restriccion de paises es una lista
+    # explicita: el dato mas fiable para saber si puedes aplicar.
+    enabled: true
+    # 20 ofertas por pagina. Su catalogo pasa de 100.000, pero nueve de cada
+    # diez son solo para Estados Unidos y se descartan al vuelo, asi que
+    # hace falta leer bastantes paginas para sacar unas pocas aptas.
+    pages: 15
+  weworkremotely:
+    enabled: true
+  otta:
+    # Otta migro a Welcome to the Jungle. Esta detras de AWS WAF con reto de
+    # JavaScript y su listado esta ademas detras del alta de cuenta, asi que
+    # copiar una cookie no vale: hay que ir con navegador.
+    #
+    # Sesion iniciada el 11/09/2026 con `jobbot login otta`, valida un ano.
+    # Si algun dia deja de devolver ofertas, vuelve a ejecutar ese comando.
+    enabled: true
+    # Otta no busca por texto: te ensena los "matches" que calcula a partir de
+    # tus preferencias en su web, de una en una. Por eso aqui no hay queries.
+    # Si las ofertas no encajan, el sitio donde se arregla es tu perfil de Otta.
+    #
+    # Cuantas recorrer por ejecucion. Cada una son unos 4 segundos de
+    # navegador, asi que 20 salen por minuto y medio.
+    max_jobs: 20
+
+schedule:
+  # El propio bot lanza la busqueda cada X horas mientras esta escuchando.
+  # Asi no hace falta tarea programada ni cron: un unico proceso, y los
+  # botones de las alertas funcionan siempre porque el bot esta vivo.
+  enabled: true
+  every_hours: 4
+  # Margen antes de la primera busqueda al arrancar, para no salir buscando
+  # en el mismo segundo en que enciendes el ordenador.
+  first_run_after_minutes: 3
+
+telegram:
+  # Cuantas ofertas manda como maximo cada ejecucion, de mejor a peor nota.
+  # Con 50 te llegan practicamente todas las que pasan el umbral. No lo
+  # quites del todo: es la red que evita que un fallo te mande 500 mensajes.
+  max_alerts_per_run: 50
+  # Segundos entre mensaje y mensaje. Telegram descarta los envios muy
+  # seguidos en un mismo chat, asi que por debajo de 1 segundo se pierden.
+  delay_between_messages: 1.2

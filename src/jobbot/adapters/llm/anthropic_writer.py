@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from ...domain.cost import TokenUsage
 from ...domain.models import ApplicationDocuments, JobOffer, MatchScore
 from ...domain.profile import CandidateProfile
-from .prompts import RATING_SYSTEM, WRITING_SYSTEM, rating_prompt, writing_prompt
+from .prompts import rating_prompt, rating_system, writing_prompt, writing_system
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ class AnthropicWriter:
             response = await self._client.messages.parse(
                 model=self._model,
                 max_tokens=self._max_tokens,
-                system=RATING_SYSTEM,
+                system=rating_system(profile),
                 messages=[
                     {
                         "role": "user",
@@ -159,7 +159,7 @@ class AnthropicWriter:
         response = await self._client.messages.parse(
             model=self._model,
             max_tokens=self._max_tokens,
-            system=WRITING_SYSTEM,
+            system=writing_system(profile),
             messages=[{"role": "user", "content": writing_prompt(offer, profile)}],
             output_format=DocumentsOutput,
         )

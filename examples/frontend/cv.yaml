@@ -1,0 +1,82 @@
+# Perfil de ejemplo: una desarrolladora frontend. Sirve para comprobar que el
+# bot no esta atado al perfil de backend con el que nacio.
+#
+#   JOBBOT_PROFILE_PATH=examples/frontend/cv.yaml
+#   JOBBOT_CONFIG_PATH=examples/frontend/config.yaml
+#   jobbot run --dry-run
+
+name: Ada Ejemplo
+headline: Frontend Software Engineer
+# Vacio a proposito: en un repo publico lo rastrean los bots de spam.
+email: ""
+languages:
+  - "Spanish: native"
+  - "English: C1"
+location: Spain
+open_to: "100% remote (Spain or international)"
+
+summary: >-
+  Frontend Software Engineer with 6 years building design systems and
+  accessible interfaces in React and TypeScript. Specialized in component
+  architecture, performance budgets and testing, from design tokens to
+  production dashboards used by thousands of people every day.
+
+skills:
+  Languages: [TypeScript, JavaScript, HTML, CSS]
+  Frameworks: [React, Next.js, Remix, Astro]
+  State: [TanStack Query, Zustand, Redux Toolkit]
+  Styling: [Tailwind CSS, CSS Modules, Radix UI, Storybook]
+  Testing: [Vitest, Testing Library, Playwright]
+  Tooling: [Vite, Turborepo, GitHub Actions]
+
+experience:
+  - id: mapamundi
+    company: Mapamundi
+    role: Senior Frontend Engineer
+    location: Remote
+    start: 2023-01
+    end: null
+    stack: [TypeScript, React, Next.js, Tailwind CSS, Playwright]
+    highlights:
+      - >-
+        Rebuilt the checkout flow in Next.js, cutting time to interactive from
+        4.1s to 1.3s on mobile.
+      - >-
+        Owned the design system: 60+ components in Storybook, adopted by four
+        product teams.
+      - >-
+        Introduced Playwright end-to-end tests on the critical paths, with a
+        blocking check in CI.
+
+  - id: tienda_verde
+    company: Tienda Verde
+    role: Frontend Engineer
+    location: Valencia
+    start: 2020-03
+    end: 2022-12
+    stack: [JavaScript, React, Redux, CSS Modules]
+    highlights:
+      - >-
+        Migrated a jQuery storefront to React without a freeze, page by page.
+      - >-
+        Brought the catalogue to WCAG 2.1 AA, fixing keyboard navigation and
+        contrast across 30+ templates.
+
+education:
+  - "Higher National Diploma in Web Application Development, 2020"
+
+# Que experiencia destaca la carta segun lo que pida la oferta.
+emphasis_rules:
+  react: [mapamundi, tienda_verde]
+  typescript: [mapamundi]
+  next.js: [mapamundi]
+  accessibility: [tienda_verde]
+  "design system": [mapamundi]
+
+cover_letter_anchors:
+  always: mapamundi
+  when:
+    - keywords: [accesibilidad, accessibility, wcag]
+      experience: tienda_verde
+    - keywords: [migracion, legacy, jquery]
+      experience: tienda_verde

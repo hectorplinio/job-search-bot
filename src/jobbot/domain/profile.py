@@ -23,10 +23,21 @@ class Experience(BaseModel):
         return f"{self.start or '?'} - {self.end or 'actualidad'}"
 
 
+class AnchorRule(BaseModel):
+    """Si la oferta menciona una de estas palabras, apoya la carta en esa
+    experiencia."""
+
+    keywords: list[str] = Field(default_factory=list)
+    experience: str
+
+
 class CoverLetterAnchors(BaseModel):
+    """Que experiencia destacar en la cover letter. Los valores son ids de
+    `experience`, asi que cada perfil trae los suyos y el prompt no sabe nada
+    de ninguna empresa concreta."""
+
     always: str | None = None
-    ai_or_llm: str | None = None
-    node_or_typescript: str | None = None
+    when: list[AnchorRule] = Field(default_factory=list)
 
 
 class CandidateProfile(BaseModel):
