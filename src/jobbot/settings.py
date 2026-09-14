@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -33,6 +36,9 @@ class Settings:
     cookie_path: Path
     browser_profile_path: Path
     source_credentials: dict[str, tuple[str, str]]
+    # Lo que no quieres publicar en config.yaml. Vacio = manda el YAML.
+    salary_minimum: int | None
+    salary_target: int | None
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -55,7 +61,21 @@ class Settings:
             cookie_path=path_of("JOBBOT_COOKIE_PATH", "data/cookies.json"),
             browser_profile_path=path_of("JOBBOT_BROWSER_PROFILE", "data/browser-profile"),
             source_credentials=cls._read_credentials(),
+            salary_minimum=cls._read_int("JOBBOT_SALARY_MINIMUM"),
+            salary_target=cls._read_int("JOBBOT_SALARY_TARGET"),
         )
+
+    @staticmethod
+    def _read_int(name: str) -> int | None:
+        """Un valor mal escrito no puede tirar el bot: se ignora y se avisa."""
+        raw = (os.getenv(name) or "").strip()
+        if not raw:
+            return None
+        try:
+            return int(raw)
+        except ValueError:
+            logger.warning("%s no es un numero (%r); se usa el valor de config.yaml", name, raw)
+            return None
 
     @staticmethod
     def _read_cookies() -> dict[str, str]:

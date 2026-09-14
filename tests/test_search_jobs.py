@@ -236,7 +236,9 @@ async def test_los_criterios_se_releen_en_cada_busqueda(tmp_path, criteria, prof
     config.write_text(yaml.safe_dump({"scoring": {"notify_threshold": 6}}), encoding="utf-8")
 
     contenedor = Container.__new__(Container)
-    contenedor.settings = type("S", (), {"config_path": config})()
+    contenedor.settings = type(
+        "S", (), {"config_path": config, "salary_minimum": None, "salary_target": None}
+    )()
     contenedor.criteria = __import__(
         "jobbot.domain.criteria", fromlist=["Criteria"]
     ).Criteria.load(config)

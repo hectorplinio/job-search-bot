@@ -26,6 +26,9 @@ def test_presencial_se_descarta(criteria) -> None:
 
 
 def test_salario_por_debajo_del_minimo_se_descarta(criteria) -> None:
+    # El suelo se fija aqui a proposito: el de config.yaml es un ejemplo,
+    # porque el de verdad vive en .env.
+    criteria.salary.minimum = 40_000
     score = score_offer(make_offer(salary=SalaryRange(28_000, 34_000)), criteria)
     assert score.is_rejected
     assert any("por debajo del minimo" in reason for reason in score.blockers)

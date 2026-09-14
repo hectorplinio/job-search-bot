@@ -30,10 +30,16 @@ search:
 
 salary:
   currency: EUR
-  # Por debajo de esto se descarta la oferta.
-  minimum: 40000
+  # Estas dos cifras son un ejemplo. Este fichero se publica en el repo, y tus
+  # numeros de negociacion no deberian estar ahi: ponlos en .env con
+  # JOBBOT_SALARY_MINIMUM y JOBBOT_SALARY_TARGET y mandan sobre estos.
+  #
+  # El minimo se compara contra el TECHO de la banda: una oferta de
+  # "35.000 - 53.000" entra igual, porque puede llegar a pagar por encima.
+  # Solo caen las que ni en su mejor caso lo alcanzan.
+  minimum: 30000
   # A partir de aqui la oferta puntua al maximo en el bloque de salario.
-  target: 50000
+  target: 45000
   # Muchas ofertas no publican salario. Si es false, se descartan todas
   # las que no lo indiquen (te quedaras con muy pocas).
   accept_unknown: true

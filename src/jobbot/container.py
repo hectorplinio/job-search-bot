@@ -49,12 +49,25 @@ class Container:
         self.settings = settings or Settings.from_env()
         configure_logging(self.settings.log_level)
 
-        self.criteria = Criteria.load(self.settings.config_path)
+        self.criteria = self._load_criteria()
         self.profile = CandidateProfile.load(self.settings.profile_path)
         self.repository = SqliteOfferRepository(self.settings.db_path)
         self.cookies = CookieStore(self.settings.cookie_path)
         self.usage = SqliteUsageLog(self.settings.db_path)
         self._http: HttpClient | None = None
+
+    def _load_criteria(self) -> Criteria:
+        """Los criterios del YAML, con lo que diga .env por encima.
+
+        El sueldo vive en .env a proposito: config.yaml se publica en el repo
+        y ahi tus cifras de negociacion no pintan nada.
+        """
+        criteria = Criteria.load(self.settings.config_path)
+        if self.settings.salary_minimum is not None:
+            criteria.salary.minimum = self.settings.salary_minimum
+        if self.settings.salary_target is not None:
+            criteria.salary.target = self.settings.salary_target
+        return criteria
 
     def effective_cookies(self) -> dict[str, str]:
         """Las cookies que se van a usar de verdad.
@@ -109,7 +122,7 @@ class Container:
         bot: se queda con los criterios que ya tenia y avisa.
         """
         try:
-            nuevos = Criteria.load(self.settings.config_path)
+            nuevos = self._load_criteria()
         except Exception:  # noqa: BLE001 - un yaml roto no puede parar la busqueda
             logger.exception("config.yaml no se puede leer; sigo con los criterios anteriores")
             return False

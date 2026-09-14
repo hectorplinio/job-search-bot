@@ -474,7 +474,12 @@ en el cron.
 
 Casi todo está en `config.yaml`:
 
-- `salary.minimum` y `salary.target`, si cambias de idea sobre el suelo.
+- `salary.minimum` y `salary.target`, si cambias de idea sobre el suelo. Ojo:
+  los valores del YAML son un ejemplo, porque este fichero se publica. Los
+  tuyos van en `.env`, con `JOBBOT_SALARY_MINIMUM` y `JOBBOT_SALARY_TARGET`,
+  que mandan sobre el YAML. El mínimo se compara contra el **techo** de la
+  banda, así que una oferta de "35.000 - 53.000" entra aunque tu mínimo sean
+  40.000.
 - `keywords.weighted`, para subir o bajar el peso de una tecnología.
 - `exclude.off_profile_titles`, si se cuela algún tipo de puesto que no quieres.
 - `scoring.notify_threshold`, si te llegan demasiadas o demasiado pocas.
@@ -496,6 +501,7 @@ oferta" vive entero en dos ficheros de datos, y ninguno de los dos toca código:
 |---|---|
 | `config.yaml` | Qué se busca, qué se descarta y cuánto pesa cada tecnología |
 | `profile/cv.yaml` | Qué sabe Claude de ti al puntuar y al escribir |
+| `.env` | Lo que no quieres publicar, como tus cifras de sueldo |
 
 Los dos se pueden apuntar a otro sitio con variables de entorno, así que puedes
 tener varios perfiles sin tocar los tuyos:
