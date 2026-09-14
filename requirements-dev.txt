@@ -6,3 +6,4 @@ respx>=0.21
 ruff>=0.6
 black>=24.8
 flake8>=7.1
+mypy>=1.11

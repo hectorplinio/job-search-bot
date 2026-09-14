@@ -98,6 +98,8 @@ class BrowserSession:
         self.profile_dir.mkdir(parents=True, exist_ok=True)
 
         self._playwright = await async_playwright().start()
+        if self._playwright is None:  # pragma: no cover - no pasa en la practica
+            raise RuntimeError("Playwright no ha arrancado; revisa la instalacion")
         # Chrome de verdad primero. Google bloquea el inicio de sesion en
         # navegadores que detecta como automatizados ("este navegador puede no
         # ser seguro"), y con el Chromium de Playwright pasa a menudo. Con el

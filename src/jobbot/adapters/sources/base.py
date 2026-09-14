@@ -33,6 +33,19 @@ REMOTE_MARKERS = (
 ONSITE_MARKERS = ("presencial", "on-site", "onsite", "in office", "in-office")
 
 
+def attr_text(value: object) -> str:
+    """El valor de un atributo HTML como cadena.
+
+    BeautifulSoup devuelve una lista cuando el atributo admite varios valores
+    (`class`, `rel`), asi que los tipos son `str | list[str] | None`.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple)):
+        return " ".join(str(item) for item in value)
+    return str(value)
+
+
 def clean_text(raw: str | None) -> str:
     """Quita etiquetas HTML y colapsa espacios."""
     if not raw:

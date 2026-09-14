@@ -47,3 +47,12 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "src/jobbot/cli.py" = ["B008"]
 # Los fixtures son HTML copiado de los portales; partirlos los falsearia.
 "tests/test_sources.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/jobbot"]
+# Las librerias de terceros que no traen tipos (bs4, playwright) no deben
+# llenar la salida de ruido: lo que se comprueba es el codigo propio.
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true

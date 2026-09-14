@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 from ...domain.criteria import Criteria
 from ...domain.models import JobOffer, WorkMode
 from ...domain.salary import parse_salary
-from .base import BaseSource, clean_text, detect_work_mode, parse_posted_at
+from .base import BaseSource, attr_text, clean_text, detect_work_mode, parse_posted_at
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class TecnoempleoSource(BaseSource):
         soup = BeautifulSoup(html, "lxml")
         offers: list[JobOffer] = []
         for link in soup.select("h3 a[href]"):
-            if not _OFFER_HREF.search(link["href"]):
+            if not _OFFER_HREF.search(attr_text(link.get("href"))):
                 continue
             card = link.find_parent("div", class_="border")
             if card is None:

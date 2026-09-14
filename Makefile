@@ -9,7 +9,7 @@ PYTHON ?= python
 PACKAGES = src tests
 
 .DEFAULT_GOAL := help
-.PHONY: help install install-dev lint format format-check test test-cov check config-check run dry-run bot clean
+.PHONY: help install install-dev lint types format format-check test test-cov check config-check run dry-run bot clean
 
 help:  ## Lista los comandos disponibles
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -24,6 +24,9 @@ install-dev: install  ## Instala tambien las herramientas de desarrollo
 lint:  ## ruff + flake8
 	$(PYTHON) -m ruff check $(PACKAGES)
 	$(PYTHON) -m flake8 $(PACKAGES)
+
+types:  ## Comprobacion de tipos con mypy
+	$(PYTHON) -m mypy
 
 format:  ## Formatea con black
 	$(PYTHON) -m black $(PACKAGES)
@@ -45,7 +48,7 @@ config-check:  ## Comprueba que los criterios y los perfiles cargan
 		[print(r, '->', CandidateProfile.load(r).name) \
 		 for r in ('profile/cv.yaml', 'examples/frontend/cv.yaml')]"
 
-check: lint format-check test config-check  ## Todo lo que ejecuta la CI
+check: lint types format-check test config-check  ## Todo lo que ejecuta la CI
 
 run:  ## Una busqueda real
 	$(PYTHON) -m jobbot.cli run

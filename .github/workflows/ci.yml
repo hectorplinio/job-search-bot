@@ -48,6 +48,9 @@ jobs:
       # Black es el formateador de referencia. `ruff format` no se usa a
       # proposito: discrepan en los literales multilinea, y dos formateadores
       # se reescriben el codigo el uno al otro.
+      - name: Tipos (mypy)
+        run: make types
+
       - name: Formato (black)
         run: make format-check
 

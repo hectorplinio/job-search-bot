@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 from ..domain.models import JobOffer, SalaryRange
 from ..domain.salary import from_bounds, parse_salary
 from .http import HttpClient
-from .sources.base import clean_text, detect_work_mode
+from .sources.base import attr_text, clean_text, detect_work_mode
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +166,7 @@ class HtmlOfferReader:
         description = clean_text(body.get_text(" "))[:20000]
 
         site = soup.find("meta", property="og:site_name")
-        company = clean_text(site.get("content")) if site else ""
+        company = clean_text(attr_text(site.get("content"))) if site else ""
 
         return JobOffer(
             source="manual",
