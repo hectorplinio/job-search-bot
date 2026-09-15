@@ -1,8 +1,8 @@
-"""Historial de ofertas en SQLite.
+"""The posting history, in SQLite.
 
-Guarda todo lo que el bot ha visto, no solo lo que te ha mandado. Asi la
-deduplicacion sobrevive a los reinicios y puedes revisar despues por que una
-oferta se descarto.
+It stores everything the bot has seen, not just what it sent you. That way
+deduplication survives restarts and you can check later why a posting was
+rejected.
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ def _now() -> str:
 
 
 class SqliteOfferRepository:
-    """Implementacion de OfferRepository sobre un fichero SQLite."""
+    """OfferRepository implemented on a SQLite file."""
 
     def __init__(self, db_path: str | Path) -> None:
         self.db_path = Path(db_path)
@@ -129,10 +129,10 @@ class SqliteOfferRepository:
         self._connection.commit()
 
     def top_pending(self, limit: int = 10, min_score: int = 0) -> list[ScoredOffer]:
-        """Lo mejor que esta guardado y aun no te ha llegado.
+        """The best of what is stored and has not reached you yet.
 
-        Incluye lo de ejecuciones anteriores que se quedo fuera por el tope
-        de mensajes, no solo lo de la pasada actual.
+        It includes the backlog from earlier runs that fell outside the message
+        cap, not only what this run found.
         """
         rows = self._connection.execute(
             """
@@ -161,8 +161,8 @@ class SqliteOfferRepository:
         return [self._to_scored(row) for row in rows]
 
     def find_by_fingerprint_prefix(self, prefix: str) -> ScoredOffer | None:
-        """Los botones de Telegram solo pueden llevar 64 bytes, asi que
-        mandan la huella recortada."""
+        """Telegram buttons can only carry 64 bytes, so they send a truncated
+        fingerprint."""
         row = self._connection.execute(
             "SELECT * FROM offers WHERE fingerprint LIKE ? LIMIT 1", (f"{prefix}%",)
         ).fetchone()
@@ -183,7 +183,7 @@ class SqliteOfferRepository:
                 COALESCE(MAX(score), 0)                    AS mejor_nota
             FROM offers
             """).fetchone()
-        # sqlite3.Row itera valores, no claves: .keys() no es redundante aqui.
+        # sqlite3.Row iterates values, not keys: .keys() is not redundant here.
         result = {key: int(totals[key] or 0) for key in totals.keys()}  # noqa: SIM118
 
         by_source = self._connection.execute(

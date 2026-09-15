@@ -1,31 +1,40 @@
 version: 2
 
-# Una revision por semana. Las minor y las patch llegan juntas en un solo PR,
-# porque revisarlas de una en una es ruido: si la CI pasa, entran. Las major
-# vienen sueltas a proposito, que son las que rompen cosas y hay que leer el
-# changelog antes de mezclarlas.
+# One check per week. Minor and patch updates arrive together in a single PR,
+# because reviewing them one by one is noise: if CI passes, they go in. Major
+# bumps come separately on purpose, since those are the ones that break things
+# and you have to read the changelog before merging them.
 
 updates:
   - package-ecosystem: pip
     directory: "/"
+    # Without this, Dependabot widens the range instead of raising it: the PRs
+    # read "update the requirements to permit the latest version", which is not
+    # a version update, so it assigns them no major/minor/patch type and the
+    # group below never matches. With `increase` they become real version
+    # bumps and the grouping works.
+    versioning-strategy: increase
     schedule:
       interval: weekly
       day: monday
       time: "07:00"
       timezone: Europe/Madrid
-    open-pull-requests-limit: 5
+    # The limit counts every open Dependabot PR, and while it is reached
+    # nothing new is created, grouped pull requests included. With six stale
+    # ones left over from before the grouping worked, there was no room.
+    open-pull-requests-limit: 10
     commit-message:
       prefix: deps
       prefix-development: deps-dev
     labels: [dependencies]
     groups:
-      # Todo lo que no sea un salto de version mayor, en un unico PR.
-      rutina:
+      # Everything that is not a major version bump, in a single PR.
+      routine:
         patterns: ["*"]
         update-types: [minor, patch]
 
-  # Las actions tambien caducan: una v4 sin actualizar acaba fallando sola
-  # cuando GitHub retira la version del runner.
+  # Actions expire too: an un-updated v4 eventually fails on its own when
+  # GitHub retires that version from the runner.
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -37,6 +46,6 @@ updates:
       prefix: ci
     labels: [dependencies]
     groups:
-      rutina:
+      routine:
         patterns: ["*"]
         update-types: [minor, patch]

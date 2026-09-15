@@ -1,4 +1,4 @@
-"""Raiz de composicion: el unico sitio donde se decide quien implementa que."""
+"""Composition root: the only place that decides who implements what."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class NullNotifier:
-    """Para `--dry-run`: deja probar la busqueda sin tener Telegram montado."""
+    """For `--dry-run`: lets you try a search without Telegram set up."""
 
     async def send_offer(self, scored) -> None:
         logger.info("[dry-run] %s/10 %s", scored.score.value, scored.offer.title)
@@ -37,13 +37,13 @@ def configure_logging(level: str) -> None:
         format="%(asctime)s %(levelname)-7s %(name)s | %(message)s",
         datefmt="%H:%M:%S",
     )
-    # httpx logea cada peticion en INFO y ensucia la salida.
+    # httpx logs every request at INFO and clutters the output.
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 class Container:
-    """Monta el grafo de objetos y se encarga de cerrarlo."""
+    """Builds the object graph and takes care of closing it."""
 
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or Settings.from_env()
@@ -57,10 +57,10 @@ class Container:
         self._http: HttpClient | None = None
 
     def _load_criteria(self) -> Criteria:
-        """Los criterios del YAML, con lo que diga .env por encima.
+        """The criteria from the YAML, with .env taking precedence.
 
-        El sueldo vive en .env a proposito: config.yaml se publica en el repo
-        y ahi tus cifras de negociacion no pintan nada.
+        Salary lives in .env on purpose: config.yaml is published in the repo,
+        and your negotiating figures have no business being there.
         """
         criteria = Criteria.load(self.settings.config_path)
         if self.settings.salary_minimum is not None:
@@ -70,11 +70,12 @@ class Container:
         return criteria
 
     def effective_cookies(self) -> dict[str, str]:
-        """Las cookies que se van a usar de verdad.
+        """The cookies that will actually be used.
 
-        Las de `jobbot login` mandan sobre las pegadas a mano en .env: son las
-        unicas que el bot sabe refrescar, asi que una manual antigua no debe
-        tapar una recien renovada. `jobbot cookies` dice de donde sale cada una.
+        The ones from `jobbot login` win over those pasted by hand into .env:
+        they are the only ones the bot can refresh, so a stale manual cookie
+        must not mask a freshly renewed one. `jobbot cookies` says where each
+        one comes from.
         """
         return {**self.settings.source_cookies, **self.cookies.usable()}
 
@@ -102,8 +103,8 @@ class Container:
         )
 
     def writer(self, *, required: bool = True) -> AnthropicWriter | None:
-        """Sin ANTHROPIC_API_KEY el bot sigue funcionando, pero solo con
-        el scoring por reglas y sin cover letters."""
+        """Without ANTHROPIC_API_KEY the bot still works, but only with
+        rule-based scoring and no cover letters."""
         if not self.settings.anthropic_api_key:
             if required:
                 self.settings.require_anthropic()
@@ -115,15 +116,15 @@ class Container:
         return HtmlOfferReader(self.http)
 
     def reload_criteria(self) -> bool:
-        """Relee config.yaml. Devuelve si algo cambio.
+        """Re-reads config.yaml. Returns whether anything changed.
 
-        Sin esto, tocar los criterios obligaba a reiniciar el bot, y es
-        precisamente lo que mas se toca. Un fichero mal escrito no tumba al
-        bot: se queda con los criterios que ya tenia y avisa.
+        Without this, touching the criteria meant restarting the bot, and the
+        criteria are exactly what you touch most. A malformed file does not
+        take the bot down: it keeps the criteria it had and warns.
         """
         try:
             nuevos = self._load_criteria()
-        except Exception:  # noqa: BLE001 - un yaml roto no puede parar la busqueda
+        except Exception:  # noqa: BLE001 - a broken yaml must not stop the search
             logger.exception("config.yaml no se puede leer; sigo con los criterios anteriores")
             return False
 
@@ -134,10 +135,10 @@ class Container:
         return True
 
     def sources(self, criteria: Criteria | None = None):
-        """Las fuentes activas, ya con cookies y perfil de navegador.
+        """The enabled sources, wired up with cookies and browser profile.
 
-        Un unico sitio donde se montan: cuando esto vivia duplicado en el CLI,
-        a `check-sources` se le olvido pasar el perfil y Otta no arrancaba.
+        One single place where they are built: when this was duplicated in the
+        CLI, `check-sources` forgot to pass the profile and Otta never started.
         """
         return build_sources(
             self.http,
@@ -147,7 +148,7 @@ class Container:
         )
 
     def search_use_case(self, *, use_llm: bool = True, notify: bool = True) -> SearchJobs:
-        # Cada busqueda arranca con los criterios que haya ahora en disco.
+        # Every search starts from whatever criteria are on disk right now.
         self.reload_criteria()
         return SearchJobs(
             sources=self.sources(),

@@ -1,4 +1,4 @@
-"""Criterios de busqueda, cargados desde config.yaml."""
+"""Search criteria, loaded from config.yaml."""
 
 from __future__ import annotations
 
@@ -16,9 +16,9 @@ class SearchCriteria(BaseModel):
     max_results_per_query: int = 25
     max_results_per_source: int = 40
     max_age_days: int = 21
-    # Ventana propia para fuentes donde la antiguedad significa otra cosa. En
-    # la bolsa de una empresa un anuncio de dos meses sigue vacante, porque los
-    # cubiertos se retiran. Pero sin tope se cuelan reqs fantasma de un ano.
+    # A separate window for sources where age means something else. On a
+    # company's own board a two-month-old posting is still open, because filled
+    # ones are taken down. But with no cap, year-old ghost reqs slip through.
     max_age_days_by_source: dict[str, int] = Field(default_factory=lambda: {"companies": 90})
 
     def age_limit_for(self, source: str) -> int:
@@ -50,14 +50,14 @@ class ExclusionCriteria(BaseModel):
     off_profile_titles: list[str] = Field(default_factory=list)
     core_title_terms: list[str] = Field(default_factory=list)
     soft_veto_stack: list[str] = Field(default_factory=list)
-    # Descarta ofertas con demasiada cola. Solo LinkedIn publica el dato,
-    # asi que null (sin filtro) es lo sensato: si no, las fuentes que no lo
-    # dan quedarian en desventaja sin motivo.
+    # Drops postings with too long a queue. Only LinkedIn publishes the
+    # number, so null (no filter) is the sensible default: otherwise the
+    # sources that do not report it would be penalised for no reason.
     max_applicants: int | None = None
 
 
 class CompetitionCriteria(BaseModel):
-    """Cuanta gente ha solicitado ya. LinkedIn lo publica en la ficha."""
+    """How many people have already applied. LinkedIn shows it on the posting."""
 
     few_applicants: int = 25
     many_applicants: int = 150

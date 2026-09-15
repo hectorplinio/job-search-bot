@@ -1,4 +1,4 @@
-"""Puertos: lo que el dominio necesita del exterior, sin saber quien lo cumple."""
+"""Ports: what the domain needs from outside, without knowing who provides it."""
 
 from __future__ import annotations
 
@@ -11,25 +11,25 @@ from .domain.profile import CandidateProfile
 
 @runtime_checkable
 class JobSource(Protocol):
-    """Una fuente de ofertas (LinkedIn, Manfred, InfoJobs...)."""
+    """A source of job postings (LinkedIn, Manfred, InfoJobs...)."""
 
     name: str
 
     async def search(self, criteria: Criteria) -> list[JobOffer]:
-        """Devuelve ofertas ya normalizadas. Nunca lanza: si falla, devuelve []."""
+        """Returns normalised postings. Never raises: on failure it returns []."""
         ...
 
 
 @runtime_checkable
 class OfferReader(Protocol):
-    """Lee una oferta suelta a partir de su URL (modo manual)."""
+    """Reads a single posting from its URL (manual mode)."""
 
     async def read(self, url: str) -> JobOffer: ...
 
 
 @runtime_checkable
 class OfferRepository(Protocol):
-    """Historial de ofertas ya procesadas."""
+    """The history of postings already processed."""
 
     def is_known(self, fingerprint: str, url_key: str) -> bool: ...
 
@@ -44,7 +44,7 @@ class OfferRepository(Protocol):
 
 @runtime_checkable
 class Notifier(Protocol):
-    """Salida hacia el usuario (Telegram)."""
+    """The way out to the user (Telegram)."""
 
     async def send_offer(self, scored: ScoredOffer) -> None: ...
 
@@ -53,7 +53,7 @@ class Notifier(Protocol):
 
 @runtime_checkable
 class DocumentWriter(Protocol):
-    """Redaccion asistida: cover letter, summary y segunda opinion del scoring."""
+    """Assisted writing: cover letter, summary and a second opinion on scoring."""
 
     async def rate(
         self, offer: JobOffer, profile: CandidateProfile, rule_score: MatchScore

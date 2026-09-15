@@ -1,5 +1,5 @@
-"""Caso de uso del modo manual: de un enlace (o un texto pegado) a los
-materiales de candidatura."""
+"""The manual-mode use case: from a link (or pasted text) to the
+application materials."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def extract_url(text: str) -> str | None:
 
 
 class WriteDocuments:
-    """Lee la oferta y le pide a Claude la carta y el summary."""
+    """Reads the posting and asks Claude for the letter and the summary."""
 
     def __init__(self, *, reader, writer, profile: CandidateProfile) -> None:
         self._reader = reader
@@ -32,7 +32,7 @@ class WriteDocuments:
         self._profile = profile
 
     async def from_input(self, raw: str) -> tuple[JobOffer, ApplicationDocuments]:
-        """Acepta tanto una URL como el texto de la oferta pegado a pelo."""
+        """Takes either a URL or the raw text of the posting."""
         url = extract_url(raw)
         offer = await self._reader.read(url) if url else self._reader.from_text(raw)
         documents = await self._writer.write(offer, self._profile)

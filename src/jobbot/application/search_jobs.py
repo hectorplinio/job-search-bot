@@ -1,4 +1,4 @@
-"""Caso de uso principal: buscar, filtrar, deduplicar, puntuar y avisar."""
+"""The main use case: search, filter, deduplicate, score and alert."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SearchReport:
-    """Lo que paso en una ejecucion. Se imprime en consola y en Telegram."""
+    """What happened in one run. Printed to the console and to Telegram."""
 
     fetched: int = 0
     duplicates: int = 0
@@ -46,10 +46,10 @@ class SearchReport:
 
 
 class SearchJobs:
-    """Orquesta fuentes, historial, scoring y notificacion.
+    """Orchestrates sources, history, scoring and notification.
 
-    El orden importa: primero los filtros baratos (reglas), luego el historial,
-    y solo al final el LLM, que es lo unico que cuesta dinero.
+    Order matters: the cheap filters (rules) first, then the history, and the
+    LLM only at the end, since it is the only part that costs money.
     """
 
     def __init__(
@@ -68,8 +68,8 @@ class SearchJobs:
         self._criteria = criteria
         self._profile = profile
         self._writer = writer
-        # El url_key no vive en ScoredOffer porque solo lo necesita el
-        # repositorio; se guarda aparte, indexado por huella.
+        # url_key does not live on ScoredOffer because only the repository
+        # needs it; it is kept apart, indexed by fingerprint.
         self._url_keys: dict[str, str] = {}
 
     async def run(self, *, dry_run: bool = False) -> SearchReport:
@@ -103,7 +103,7 @@ class SearchJobs:
         return harvested
 
     def _drop_known(self, offers: list[JobOffer], report: SearchReport) -> list[tuple]:
-        """Quita lo que ya esta en el historial y lo repetido dentro del lote."""
+        """Drops what is already in the history and repeats within the batch."""
         seen_in_batch: set[str] = set()
         fresh: list[tuple[JobOffer, str, str]] = []
 
@@ -178,17 +178,16 @@ class SearchJobs:
         dry_run: bool,
     ) -> None:
         if dry_run:
-            # Un ensayo no puede dejar rastro: si guardase, la siguiente
-            # ejecucion de verdad daria estas ofertas por vistas y no te
-            # llegaria ninguna.
+            # A dry run must leave no trace: if it saved, the next real run
+            # would treat these postings as already seen and none of them
+            # would ever reach you.
             logger.info("dry-run: %s ofertas se habrian enviado (historial intacto)", len(alerts))
             return
 
-        # Se guarda todo sin marcar, y despues se decide que mandar leyendo
-        # del historial. Asi entra tambien lo que se quedo en cola en pasadas
-        # anteriores por haber tocado el tope, que si no se perderia para
-        # siempre: ya consta como visto y nunca volveria a entrar por la
-        # deteccion de duplicados.
+        # Everything is stored unmarked, and what to send is then decided by
+        # reading the history. That way the backlog from earlier runs that hit
+        # the cap is included too; otherwise it would be lost forever, since
+        # it already counts as seen and deduplication would never let it back.
         for item in candidates:
             self._repository.remember(
                 item,

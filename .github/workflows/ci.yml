@@ -1,8 +1,8 @@
 name: CI
 
-# Los tests no tocan la red: cada adaptador se prueba contra fixtures copiados
-# de la respuesta real del portal. Por eso esto corre sin secretos y en
-# cualquier runner limpio.
+# The tests never touch the network: each adapter is tested against fixtures
+# copied from the job board's real response. That is why this runs with no
+# secrets, on any clean runner.
 
 on:
   push:
@@ -21,13 +21,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # La version minima que declara pyproject y la que uso en local.
+        # The minimum version pyproject declares, and the one used locally.
         python-version: ["3.11", "3.12"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -35,46 +35,38 @@ jobs:
             requirements.txt
             requirements-dev.txt
 
-      - name: Instalar dependencias
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
-          pip install -r requirements-dev.txt
+          make install-dev
 
-      - name: Lint (ruff)
-        run: ruff check src tests
+      # The recipes live in the Makefile so this is exactly what you run on
+      # your own machine with `make check`.
+      - name: Lint (ruff + flake8)
+        run: make lint
 
-      - name: Lint (flake8)
-        run: flake8 src tests
+      # Black is the formatter of record. `ruff format` is deliberately not
+      # used: they disagree on multiline literals, and two formatters rewrite
+      # each other's code.
+      - name: Types (mypy)
+        run: make types
 
-      # Black es el formateador de referencia. `ruff format` no esta aqui a
-      # proposito: discrepan en los literales multilinea, y dos formateadores
-      # se reescriben el codigo el uno al otro.
-      - name: Formato (black)
-        run: black --check src tests
+      - name: Format (black)
+        run: make format-check
 
       - name: Tests
-        run: pytest -q
+        run: make test
 
   config:
-    # Los ficheros de criterios son la interfaz del proyecto: si uno deja de
-    # cargar, el bot no arranca. Se valida tambien el perfil de ejemplo.
+    # The criteria files are the project's interface: if one stops loading, the
+    # bot does not start. The example profile is validated too.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - run: pip install -e .
-      - name: Los criterios y los perfiles cargan
-        run: |
-          python - <<'PY'
-          from jobbot.domain.criteria import Criteria
-          from jobbot.domain.profile import CandidateProfile
-
-          for ruta in ("config.yaml", "examples/frontend/config.yaml"):
-              print(ruta, "->", len(Criteria.load(ruta).search.queries), "busquedas")
-          for ruta in ("profile/cv.yaml", "examples/frontend/cv.yaml"):
-              print(ruta, "->", CandidateProfile.load(ruta).name)
-          PY
+      - run: make install
+      - name: The criteria and the profiles load
+        run: make config-check

@@ -1,12 +1,12 @@
-"""Renovar la sesion de un portal desde un navegador real.
+"""Renewing a job board session from a real browser.
 
-Dos modos, y el orden importa:
+Two modes, and the order matters:
 
-1. Si el perfil del navegador ya tiene la sesion viva (lo normal a partir de
-   la primera vez), no hace falta ni contrasena: se abre la pagina, se
-   comprueba que sigues dentro y se exportan las cookies.
-2. Si la sesion ha caducado, intenta el formulario con las credenciales de
-   .env. Si el portal pide captcha o 2FA, para y te deja entrar tu.
+1. If the browser profile still holds a live session (the normal case after
+   the first time), no password is needed: open the page, check you are
+   still signed in and export the cookies.
+2. If the session has expired, try the form with the credentials from .env.
+   If the site asks for a captcha or 2FA, stop and let you sign in yourself.
 """
 
 from __future__ import annotations
@@ -22,10 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 def _is_window_closed(exc: Exception) -> bool:
-    """Si cerraste la ventana, Playwright lanza esto. No es un fallo nuestro.
+    """Playwright raises this when you close the window. Not our failure.
 
-    Se mira por nombre y por mensaje porque `TargetClosedError` no esta
-    exportado en todas las versiones de Playwright.
+    Checked by name and by message because `TargetClosedError` is not
+    exported in every version of Playwright.
     """
     if type(exc).__name__ in {"TargetClosedError", "TimeoutError"}:
         return True
@@ -42,7 +42,7 @@ class LoginResult:
 
 
 class UnknownPortal(ValueError):
-    """El portal no admite sesion, o no existe."""
+    """The job board takes no session, or does not exist."""
 
 
 class RefreshSessions:
@@ -65,10 +65,10 @@ class RefreshSessions:
         auto: bool = False,
         confirm=None,
     ) -> LoginResult:
-        """Renueva una sesion.
+        """Renews a session.
 
-        `confirm` es la funcion que espera a que termines de entrar a mano.
-        En el CLI es un input(); en un test, una lambda.
+        `confirm` is the function that waits until you finish signing in by
+        hand. In the CLI it is an input(); in a test, a lambda.
         """
         portal = PORTALS.get(source)
         if portal is None:
@@ -98,8 +98,8 @@ class RefreshSessions:
             except Exception as exc:  # noqa: BLE001
                 if not _is_window_closed(exc):
                     raise
-                # Cerrar la ventana antes de guardar es un final normal, no un
-                # fallo del programa: no tiene sentido escupir un traceback.
+                # Closing the window before saving is a normal ending, not a
+                # program failure: printing a traceback makes no sense.
                 return LoginResult(
                     source,
                     False,
@@ -128,7 +128,7 @@ class RefreshSessions:
                     return True
 
         if headless:
-            # Sin ventana no hay forma de resolver un captcha ni un 2FA.
+            # With no window there is no way to solve a captcha or a 2FA step.
             logger.error(
                 "%s: la sesion caduco y en modo headless no puedo pedirte que entres. "
                 "Ejecuta `jobbot login %s` sin --headless.",
@@ -144,8 +144,8 @@ class RefreshSessions:
 
     @staticmethod
     async def _looks_logged_in(page, portal) -> bool:
-        """Heuristica: si el portal no te ha mandado a su pantalla de login,
-        es que sigues dentro."""
+        """Heuristic: if the site has not bounced you to its login screen,
+        you are still signed in."""
         url = page.url.lower()
         if any(marker in url for marker in ("login", "signin", "sign-in", "acceso")):
             return False

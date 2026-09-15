@@ -1,8 +1,8 @@
-"""Extraccion de salario anual bruto a partir de texto libre.
+"""Gross annual salary extracted from free text.
 
-Las fuentes publican el salario de cualquier manera imaginable: "40.000€ -
-50.000€", "45k-55k", "2.800 € brutos/mes", "$120,000". Esto lo normaliza todo
-a un rango anual y descarta lo que no es plausible como salario.
+Job boards publish pay in every imaginable shape: "40.000€ - 50.000€",
+"45k-55k", "2.800 € brutos/mes", "$120,000". This normalises all of it into a
+yearly range and drops anything that is not plausible as a salary.
 """
 
 from __future__ import annotations
@@ -11,9 +11,9 @@ import re
 
 from .models import SalaryRange
 
-# Palabras que confirman que una linea habla de dinero. Sin una de estas no
-# parseamos nada del cuerpo de la oferta, o acabariamos leyendo "200.000
-# usuarios" como si fuera un sueldo.
+# Words that confirm a line is talking about money. Without one of these we
+# parse nothing from the body of a posting, or we would end up reading
+# "200.000 usuarios" as if it were a salary.
 SALARY_CONTEXT = (
     "salario",
     "salarial",
@@ -33,9 +33,9 @@ SALARY_CONTEXT = (
     "£",
 )
 
-# Un numero pelado (sin "k", sin simbolo, sin separador de miles) solo cuenta
-# como salario si la linea lo dice explicitamente. Tecnoempleo publica cosas
-# como "Salario:35000 a 38000 brutos anuales".
+# A bare number (no "k", no currency symbol, no thousands separator) only
+# counts as pay when the line says so explicitly. Tecnoempleo publishes things
+# like "Salario:35000 a 38000 brutos anuales".
 STRONG_SALARY_WORDS = (
     "salario",
     "salarial",
@@ -51,8 +51,8 @@ STRONG_SALARY_WORDS = (
 HOURLY_MARKERS = ("/h", "hora", "hour", "/día", "/dia", "per day", "diario")
 MONTHLY_MARKERS = ("/mes", "mensual", "al mes", "month", "mensuales", "x 12", "x 14")
 
-# Numero con separadores de miles (40.000 / 40,000), decimal opcional, o
-# entero pelado. El sufijo "k" y los simbolos de moneda se capturan aparte.
+# A number with thousands separators (40.000 / 40,000), an optional decimal,
+# or a bare integer. The "k" suffix and currency symbols are captured apart.
 _MONEY = re.compile(
     r"(?P<pre>[€$£]|eur|usd|gbp)?\s*"
     r"(?P<num>\d{1,3}(?:[.,\s]\d{3})+|\d{2,7})"
@@ -61,7 +61,7 @@ _MONEY = re.compile(
     re.IGNORECASE,
 )
 
-# Un salario anual fuera de esta horquilla es casi seguro otra cosa.
+# A yearly figure outside this band is almost certainly something else.
 MIN_PLAUSIBLE = 12_000
 MAX_PLAUSIBLE = 500_000
 
@@ -77,9 +77,9 @@ _CURRENCY_BY_SYMBOL = {
 
 
 def _to_int(raw: str) -> int | None:
-    """'40.000' -> 40000. '40,5' -> 40 (decimales fuera)."""
+    """'40.000' -> 40000. '40,5' -> 40 (decimals dropped)."""
     cleaned = re.sub(r"\s", "", raw)
-    # Separador decimal solo si quedan 1-2 digitos detras del ultimo punto/coma.
+    # It is a decimal separator only if 1-2 digits follow the last dot/comma.
     decimal = re.search(r"[.,]\d{1,2}$", cleaned)
     if decimal:
         cleaned = cleaned[: decimal.start()]
@@ -87,9 +87,9 @@ def _to_int(raw: str) -> int | None:
     return int(cleaned) if cleaned.isdigit() else None
 
 
-# En "€70-100k" la k vale para los dos numeros. Sin esto se lee solo el 100k
-# y la oferta parece tener suelo de 100.000 en vez de 70.000. Otta lo escribe
-# siempre asi.
+# In "€70-100k" the k applies to both numbers. Without this we read only the
+# 100k and the posting looks like it starts at 100.000 instead of 70.000. Otta
+# always writes it that way.
 _SHARED_K = re.compile(r"(\d{2,3})\s*-\s*(\d{2,3})\s*k\b", re.IGNORECASE)
 
 
@@ -98,7 +98,7 @@ def _expand_shared_k(text: str) -> str:
 
 
 def _candidates(line: str) -> tuple[list[int], str]:
-    """Devuelve los importes anuales plausibles de una linea y su moneda."""
+    """The plausible yearly amounts in one line, plus its currency."""
     lowered = line.lower()
     if any(marker in lowered for marker in HOURLY_MARKERS):
         return [], "EUR"
@@ -122,8 +122,8 @@ def _candidates(line: str) -> tuple[list[int], str]:
             value *= 1000
         value *= multiplier
 
-        # Un numero pelado sin moneda, sin "k" y sin separador de miles
-        # (p.ej. "5" de "5 años") solo cuenta si la linea nombra el salario.
+        # A bare number with no currency, no "k" and no thousands separator
+        # (say the "5" in "5 años") only counts if the line names the salary.
         looks_like_money = (
             has_k or bool(symbol) or bool(re.search(r"[.,\s]\d{3}", match.group("num")))
         )
@@ -137,11 +137,11 @@ def _candidates(line: str) -> tuple[list[int], str]:
 
 
 def parse_salary(text: str | None, *, require_context: bool = True) -> SalaryRange:
-    """Busca un rango salarial en `text`.
+    """Finds a salary range in `text`.
 
-    Con `require_context=True` solo mira las lineas que mencionan salario o
-    una moneda, que es lo correcto para descripciones largas. Ponlo a False
-    cuando le pases un campo que ya sabes que es el salario.
+    With `require_context=True` it only looks at lines mentioning pay or a
+    currency, which is what you want for long descriptions. Pass False when
+    handing it a field you already know holds the salary.
     """
     if not text:
         return SalaryRange()
@@ -168,12 +168,12 @@ def parse_salary(text: str | None, *, require_context: bool = True) -> SalaryRan
 
 
 def from_bounds(minimum: int | None, maximum: int | None, currency: str = "EUR") -> SalaryRange:
-    """Constructor para fuentes que ya dan el rango en campos separados."""
+    """Builder for sources that already give the range in separate fields."""
 
     def clean(value: int | None) -> int | None:
         if value is None or value <= 0:
             return None
-        if value < 1000:  # algunas APIs publican "45" queriendo decir 45k
+        if value < 1000:  # some APIs publish "45" meaning 45k
             value *= 1000
         return value if MIN_PLAUSIBLE <= value <= MAX_PLAUSIBLE else None
 

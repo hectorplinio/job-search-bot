@@ -1,4 +1,4 @@
-"""Configuracion que viene del entorno (.env), separada de los criterios."""
+"""Settings that come from the environment (.env), kept apart from criteria."""
 
 from __future__ import annotations
 
@@ -15,11 +15,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class MissingSetting(RuntimeError):
-    """Falta una variable de entorno obligatoria."""
+    """A required environment variable is missing."""
 
 
-# Fuentes que pueden usar tu sesion. La cookie se lee de <NOMBRE>_COOKIE y
-# vive solo en .env: nunca en config.yaml, que si va a git.
+# Sources that can use your session. The cookie is read from <NAME>_COOKIE
+# and lives only in .env: never in config.yaml, which does go to git.
 COOKIE_CAPABLE_SOURCES = ("infojobs", "glassdoor", "linkedin", "otta")
 
 
@@ -36,7 +36,7 @@ class Settings:
     cookie_path: Path
     browser_profile_path: Path
     source_credentials: dict[str, tuple[str, str]]
-    # Lo que no quieres publicar en config.yaml. Vacio = manda el YAML.
+    # What you do not want published in config.yaml. Empty = the YAML wins.
     salary_minimum: int | None
     salary_target: int | None
 
@@ -67,7 +67,7 @@ class Settings:
 
     @staticmethod
     def _read_int(name: str) -> int | None:
-        """Un valor mal escrito no puede tirar el bot: se ignora y se avisa."""
+        """A malformed value must not take the bot down: ignore it and warn."""
         raw = (os.getenv(name) or "").strip()
         if not raw:
             return None
@@ -88,7 +88,7 @@ class Settings:
 
     @staticmethod
     def _read_credentials() -> dict[str, tuple[str, str]]:
-        """Usuario y contrasena por portal, solo para el login automatico."""
+        """Username and password per job board, only for the automatic login."""
         credentials = {}
         for name in COOKIE_CAPABLE_SOURCES:
             user = (os.getenv(f"{name.upper()}_USER") or "").strip()

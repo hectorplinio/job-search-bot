@@ -1,9 +1,9 @@
-"""Interfaz de linea de comandos.
+"""The command line interface.
 
-jobbot run            una pasada de busqueda (esto es lo que ejecuta el cron)
-jobbot bot            arranca el bot en modo escucha
-jobbot apply <url>    cover letter + summary para una oferta concreta
-jobbot stats          que lleva visto el bot
+jobbot run            one search pass (this is what the cron job runs)
+jobbot bot            starts the bot in listening mode
+jobbot apply <url>    cover letter + summary for one specific posting
+jobbot stats          what the bot has seen so far
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ def run(
     no_llm: bool = typer.Option(False, "--no-llm", help="Solo scoring por reglas, sin gastar."),
     report: bool = typer.Option(True, "--report/--no-report", help="Manda el resumen a Telegram."),
 ) -> None:
-    """Una pasada completa: busca, filtra, puntua y avisa."""
+    """One full pass: search, filter, score and alert."""
 
     async def _main() -> None:
         async with Container() as container:
@@ -62,7 +62,7 @@ def run(
 
 @app.command()
 def bot() -> None:
-    """Arranca el bot para hablar con el desde Telegram."""
+    """Starts the bot so you can talk to it from Telegram."""
     from .bot import run_bot
 
     run_bot()
@@ -73,7 +73,7 @@ def apply(
     target: str = typer.Argument(..., help="URL de la oferta, o el texto pegado entre comillas."),
     output: Path | None = typer.Option(None, "--output", "-o", help="Carpeta donde guardarlo."),
 ) -> None:
-    """Genera la cover letter y el summary adaptado para una oferta."""
+    """Writes the cover letter and the tailored summary for one posting."""
 
     async def _main() -> None:
         async with Container() as container:
@@ -100,7 +100,7 @@ def apply(
 
 @app.command()
 def stats() -> None:
-    """Que lleva visto y enviado el bot."""
+    """What the bot has seen and sent."""
 
     async def _main() -> None:
         async with Container() as container:
@@ -114,7 +114,7 @@ def stats() -> None:
 
 @app.command()
 def usage() -> None:
-    """Cuanto llevas gastado en la API de Claude."""
+    """How much you have spent on the Claude API."""
 
     async def _main() -> None:
         from .domain.cost import format_cost
@@ -151,7 +151,7 @@ def usage() -> None:
 
 @app.command()
 def sources() -> None:
-    """Fuentes disponibles y cuales estan activas en config.yaml."""
+    """Available sources, and which ones are enabled in config.yaml."""
 
     async def _main() -> None:
         async with Container() as container:
@@ -174,11 +174,11 @@ def login(
         False, "--headless", help="Sin ventana. Solo sirve si la sesion sigue viva."
     ),
 ) -> None:
-    """Renueva la sesion de un portal abriendo un navegador real.
+    """Renews a job board session by opening a real browser.
 
-    La primera vez entra tu en la ventana, con tu 2FA si lo tienes. El perfil
-    del navegador guarda la sesion, y las siguientes veces basta con volver a
-    ejecutar esto para refrescar las cookies.
+    The first time you sign in yourself in the window, with your 2FA if you
+    have one. The browser profile keeps the session, and from then on running
+    this again is enough to refresh the cookies.
     """
 
     async def _main() -> None:
@@ -238,7 +238,7 @@ def login(
 
 @app.command()
 def cookies() -> None:
-    """Estado de las sesiones guardadas. Nunca imprime el valor de la cookie."""
+    """The state of the stored sessions. It never prints the cookie value."""
 
     async def _main() -> None:
         settings = Settings.from_env()
@@ -265,10 +265,10 @@ def cookies() -> None:
 def check_sources(
     query: str = typer.Option("python", "--query", "-q", help="Una sola busqueda de prueba."),
 ) -> None:
-    """Prueba cada fuente activa y dice cuantas ofertas devuelve.
+    """Tries every enabled source and reports how many postings it returns.
 
-    Es lo que hay que ejecutar despues de poner una cookie en .env: si la
-    fuente pasa de 0 a un numero, la sesion esta funcionando.
+    This is what to run after putting a cookie in .env: if the source goes
+    from 0 to a number, the session is working.
     """
 
     async def _main() -> None:
@@ -276,7 +276,7 @@ def check_sources(
             probe = container.criteria.model_copy(deep=True)
             probe.search.queries = [query]
             probe.search.max_results_per_query = 10
-            # Las opciones por fuente pueden traer su propia lista de queries.
+            # Per-source options may carry their own list of queries.
             for options in probe.sources.values():
                 options.pop("queries", None)
 
@@ -312,7 +312,7 @@ def chat_id(
         False, "--save", help="Escribe el id en .env sin que tengas que copiarlo."
     ),
 ) -> None:
-    """Imprime tu chat id. Escribe algo al bot antes de lanzarlo."""
+    """Prints your chat id. Write something to the bot before running it."""
 
     async def _main() -> None:
         from telegram import Bot
@@ -360,8 +360,8 @@ def chat_id(
 
 
 def _write_chat_id(value: int) -> None:
-    """Sustituye solo la linea del chat id y deja el resto del .env intacto."""
-    # El mismo .env que carga Settings, no el que diga JOBBOT_CONFIG_PATH.
+    """Replaces only the chat id line and leaves the rest of .env untouched."""
+    # The same .env that Settings loads, not whatever JOBBOT_CONFIG_PATH says.
     env_path = PROJECT_ROOT / ".env"
     lines = env_path.read_text(encoding="utf-8").splitlines()
 

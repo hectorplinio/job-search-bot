@@ -1,4 +1,4 @@
-"""Registro de fuentes: config.yaml decide cuales se instancian."""
+"""The source registry: config.yaml decides which ones get instantiated."""
 
 from __future__ import annotations
 
@@ -42,11 +42,11 @@ def build_sources(
     cookies: dict[str, str] | None = None,
     browser_profile: str | None = None,
 ) -> list[BaseSource]:
-    """Instancia solo las fuentes marcadas como enabled.
+    """Instantiates only the sources marked as enabled.
 
-    Las cookies llegan desde .env, no desde config.yaml, y se inyectan aqui
-    en las opciones. Asi las fuentes no saben nada de variables de entorno y
-    los secretos no acaban en un fichero versionado.
+    Cookies come from .env, not from config.yaml, and are injected into the
+    options here. That way sources know nothing about environment variables
+    and secrets never end up in a versioned file.
     """
     cookies = cookies or {}
     sources = []
