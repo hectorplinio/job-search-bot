@@ -1,12 +1,12 @@
 """Remotive.
 
-API publica en JSON, sin clave. Casi todo son empresas estadounidenses que
-contratan en remoto, que es justo el hueco que no cubren los portales
-espanoles.
+A public JSON API, no key. Almost all of it is United States companies hiring
+remotely, which is exactly the gap the Spanish boards leave open.
 
-Lo valioso es el campo `candidate_required_location`: dice desde donde admiten
-candidatos. Una oferta remota que ponga "USA" no la puedes aceptar desde
-Espana, y con ese dato se descarta antes de gastar nada en ella.
+The valuable part is the `candidate_required_location` field: it says where
+they accept candidates from. A remote posting that says "USA" cannot be
+accepted from Spain, and with that field it is dropped before spending
+anything on it.
 """
 
 from __future__ import annotations
@@ -78,7 +78,7 @@ class RemotiveSource(BaseSource):
             url=row.get("url") or "",
             description=clean_text(row.get("description")),
             location=row.get("candidate_required_location") or "Worldwide",
-            # Remotive solo publica ofertas remotas.
+            # Remotive only publishes remote postings.
             work_mode=WorkMode.REMOTE,
             salary=parse_salary(row.get("salary"), require_context=False),
             posted_at=posted_at,

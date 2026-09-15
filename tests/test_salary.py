@@ -14,7 +14,7 @@ from jobbot.domain.salary import from_bounds, parse_salary
         ("Salario:35000 a 38000 brutos anuales", 35_000, 38_000),
         ("50.000 € - 56.000 € Bruto/año", 50_000, 56_000),
         ("Retribucion: 2.800 € brutos/mes", 33_600, None),
-        # Otta escribe la k una sola vez para los dos extremos del rango.
+        # Otta writes the k once for both ends of the range.
         ("€70-100k", 70_000, 100_000),
         ("$120-160k", 120_000, 160_000),
     ],
@@ -48,7 +48,7 @@ def test_moneda_detectada() -> None:
 
 
 def test_from_bounds_normaliza_miles() -> None:
-    # Manfred publica "50" queriendo decir 50.000 en la ficha de detalle.
+    # Manfred publishes "50" meaning 50,000 on the detail page.
     salary = from_bounds(50, 60)
     assert (salary.minimum, salary.maximum) == (50_000, 60_000)
 

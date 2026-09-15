@@ -1,4 +1,4 @@
-"""Piezas comunes a todos los scrapers."""
+"""Pieces shared by every scraper."""
 
 from __future__ import annotations
 
@@ -34,10 +34,10 @@ ONSITE_MARKERS = ("presencial", "on-site", "onsite", "in office", "in-office")
 
 
 def attr_text(value: object) -> str:
-    """El valor de un atributo HTML como cadena.
+    """An HTML attribute value as a string.
 
-    BeautifulSoup devuelve una lista cuando el atributo admite varios valores
-    (`class`, `rel`), asi que los tipos son `str | list[str] | None`.
+    BeautifulSoup returns a list when the attribute takes several values
+    (`class`, `rel`), so the types are `str | list[str] | None`.
     """
     if value is None:
         return ""
@@ -47,7 +47,7 @@ def attr_text(value: object) -> str:
 
 
 def clean_text(raw: str | None) -> str:
-    """Quita etiquetas HTML y colapsa espacios."""
+    """Strips HTML tags and collapses whitespace."""
     if not raw:
         return ""
     if "<" in raw and ">" in raw:
@@ -56,8 +56,8 @@ def clean_text(raw: str | None) -> str:
 
 
 def detect_work_mode(*fragments: str | None) -> WorkMode:
-    """Deduce la modalidad. Hibrido gana a remoto: si la oferta dice ambas,
-    en la practica es hibrida."""
+    """Works out the work mode. Hybrid beats remote: if a posting says both,
+    in practice it is hybrid."""
     text = " ".join(fragment.lower() for fragment in fragments if fragment)
     if not text:
         return WorkMode.UNKNOWN
@@ -99,7 +99,7 @@ _UNIT_DAYS = {
 
 
 def parse_posted_at(text: str | None, today: date | None = None) -> date | None:
-    """Entiende 'Hace 3d', 'hace 2 días', '3 days ago', '10/09/2026' y ISO."""
+    """Understands 'Hace 3d', 'hace 2 días', '3 days ago', '10/09/2026' and ISO."""
     if not text:
         return None
     today = today or date.today()
@@ -135,11 +135,11 @@ def parse_posted_at(text: str | None, today: date | None = None) -> date | None:
     return None
 
 
-# Desde donde puedes trabajar. Algunos portales lo publican como campo
-# propio, que es mucho mas fiable que adivinarlo del texto de la oferta.
+# Where you are allowed to work from. Some boards publish this as a field of
+# its own, which is far more reliable than guessing from the posting text.
 WORLDWIDE_MARKERS = ("worldwide", "anywhere", "global", "any country")
 EUROPE_MARKERS = ("europe", "emea", "european union", "eea")
-# Las bolsas propias escriben la ciudad, no el pais: "Barcelona" a secas.
+# Company boards write the city, not the country: plain "Barcelona".
 SPAIN_MARKERS = (
     "spain",
     "espana",
@@ -157,11 +157,11 @@ SPAIN_MARKERS = (
 
 
 def can_work_from(restriction: str | None, country: str = "spain") -> bool:
-    """Si una oferta remota admite a alguien que vive en `country`.
+    """Whether a remote posting accepts someone living in `country`.
 
-    Sin restriccion se asume mundial: los portales dejan el campo vacio cuando
-    no limitan. Una oferta que solo diga "USA" se descarta aunque sea remota,
-    porque remota no significa contratable desde aqui.
+    With no restriction, worldwide is assumed: boards leave the field empty
+    when they do not limit it. A posting that only says "USA" is rejected even
+    if it is remote, because remote does not mean hireable from here.
     """
     if not restriction or not restriction.strip():
         return True
@@ -174,12 +174,11 @@ def can_work_from(restriction: str | None, country: str = "spain") -> bool:
 
 
 def interleave(groups: list[list[JobOffer]]) -> list[JobOffer]:
-    """Mezcla los resultados de varias busquedas alternandolos.
+    """Interleaves the results of several searches.
 
-    Sin esto, concatenar y cortar por el tope hace que la primera busqueda se
-    lleve todo el cupo y las demas no lleguen a entrar nunca. Alternando, cada
-    busqueda aporta sus mejores resultados antes de que nadie aporte el
-    segundo.
+    Without this, concatenating and truncating at the cap means the first
+    search takes the whole quota and the rest never get in. Interleaved, every
+    search contributes its best results before anyone contributes a second.
     """
     mezclado: list[JobOffer] = []
     for posicion in range(max((len(g) for g in groups), default=0)):
@@ -190,7 +189,7 @@ def interleave(groups: list[list[JobOffer]]) -> list[JobOffer]:
 
 
 class BaseSource(ABC):
-    """Contrato comun: `search` puede fallar, `safe_search` no."""
+    """The shared contract: `search` may fail, `safe_search` may not."""
 
     name: str = "base"
 
@@ -200,19 +199,19 @@ class BaseSource(ABC):
 
     @abstractmethod
     async def search(self, criteria: Criteria) -> list[JobOffer]:
-        """Implementacion concreta. Puede lanzar."""
+        """The concrete implementation. It may raise."""
 
     @property
     def has_session(self) -> bool:
-        """Si esta fuente va a usar tu cuenta en vez de ir de invitado."""
+        """Whether this source will use your account instead of going as a guest."""
         return bool(self.options.get("cookie"))
 
     def auth_headers(self) -> dict[str, str]:
-        """Cabeceras de la peticion.
+        """The request headers.
 
-        Sin cookie devuelve {} y la fuente va anonima, como hasta ahora. Con
-        cookie manda tambien las cabeceras `Sec-Fetch-*` que envia un navegador
-        real: una peticion con sesion pero sin ellas canta muchisimo.
+        With no cookie it returns {} and the source goes anonymous, as before.
+        With a cookie it also sends the `Sec-Fetch-*` headers a real browser
+        sends: a request with a session but without them stands out a mile.
         """
         cookie = self.options.get("cookie")
         if not cookie:
@@ -230,19 +229,19 @@ class BaseSource(ABC):
         }
 
     def queries(self, criteria: Criteria) -> list[str]:
-        """Las queries de esta fuente.
+        """This source's queries.
 
-        Los portales espanoles (InfoJobs, Tecnoempleo) cortan por IP si les
-        encadenas seis busquedas seguidas, asi que config.yaml puede darles
-        una lista mas corta y mas amplia que la general.
+        The Spanish boards (InfoJobs, Tecnoempleo) block your IP if you chain
+        six searches in a row, so config.yaml can give them a shorter, broader
+        list than the general one.
         """
         return self.options.get("queries") or criteria.search.queries
 
     async def safe_search(self, criteria: Criteria) -> list[JobOffer]:
-        """Lo que llama el caso de uso. Una fuente caida no tumba la ejecucion."""
+        """What the use case calls. A source that is down does not sink the run."""
         try:
             offers = await self.search(criteria)
-        except Exception:  # noqa: BLE001 - una fuente rota no puede parar al resto
+        except Exception:  # noqa: BLE001 - one broken source must not stop the others
             logger.exception("La fuente %s fallo; se ignora en esta ejecucion", self.name)
             return []
         session = " (con sesion)" if self.has_session else ""
@@ -250,7 +249,7 @@ class BaseSource(ABC):
         return offers
 
     def _deduplicate(self, offers: list[JobOffer]) -> list[JobOffer]:
-        """Quita repetidos dentro de la propia fuente (varias queries la traen)."""
+        """Drops repeats within the source itself (several queries return it)."""
         seen: set[str] = set()
         unique: list[JobOffer] = []
         for offer in offers:

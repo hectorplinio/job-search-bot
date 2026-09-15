@@ -1,23 +1,23 @@
-"""Bolsas de empleo propias de las empresas que te interesan.
+"""The job boards of the companies you care about.
 
-Es la fuente mas valiosa del proyecto, y la mas aburrida: casi toda empresa
-tech publica a traves de Greenhouse o Ashby, y los dos exponen la bolsa entera
-en JSON, sin clave y sin antibot.
+This is the most valuable source in the project, and the dullest: nearly every
+tech company publishes through Greenhouse or Ashby, and both expose the whole
+board as JSON, with no key and no antibot.
 
-Tres ventajas sobre cualquier agregador:
+Three advantages over any aggregator:
 
-1. La oferta aparece aqui antes que en ningun otro sitio.
-2. Viene con la ubicacion real. Grafana Labs publica el mismo puesto por pais,
-   asi que se ve directamente cual es el de Espana, en vez de encontrarte el
-   de Irlanda y tener que averiguar si admiten a alguien de aqui.
-3. No hay ranking que esconda nada: se lee el catalogo completo.
+1. The posting shows up here before it shows up anywhere else.
+2. It carries the real location. Grafana Labs publishes the same role per
+   country, so you can see which one is the Spanish opening, instead of
+   finding the Irish one and having to work out whether they hire from here.
+3. No ranking hides anything: you read the full catalogue.
 
-A cambio hay que decirle que empresas mirar. Eso esta en config.yaml, en
-`sources.companies.watchlist`.
+In exchange you have to tell it which companies to watch. That lives in
+config.yaml, under `sources.companies.watchlist`.
 
-Para anadir una empresa, busca su pagina de empleo y mira la URL:
-    job-boards.greenhouse.io/EMPRESA  ->  ats: greenhouse, slug: EMPRESA
-    jobs.ashbyhq.com/EMPRESA          ->  ats: ashby,      slug: EMPRESA
+To add a company, find its careers page and look at the URL:
+    job-boards.greenhouse.io/COMPANY  ->  ats: greenhouse, slug: COMPANY
+    jobs.ashbyhq.com/COMPANY          ->  ats: ashby,      slug: COMPANY
 """
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ class CompaniesSource(BaseSource):
 
         try:
             ofertas = await lector(empresa, slug)
-        except Exception as exc:  # noqa: BLE001 - una empresa caida no anula las demas
+        except Exception as exc:  # noqa: BLE001 - one company being down does not void the others
             logger.warning("No pude leer la bolsa de %s (%s)", slug, str(exc)[:70])
             return []
 
@@ -122,7 +122,7 @@ class CompaniesSource(BaseSource):
         return [self._from_ashby(row, nombre, slug) for row in payload.get("jobs", [])]
 
     def _from_ashby(self, row: dict, nombre: str, slug: str) -> JobOffer:
-        # Ashby reparte las ubicaciones entre la principal y las secundarias.
+        # Ashby splits locations between the primary one and the secondary ones.
         ubicaciones = [row.get("location") or ""]
         ubicaciones += [
             (extra or {}).get("location", "") for extra in row.get("secondaryLocations") or []

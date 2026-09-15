@@ -1,18 +1,18 @@
-"""Navegador real para renovar sesiones.
+"""A real browser, for renewing sessions.
 
-Por que hace falta: los cuatro portales con cuenta protegen tambien el login.
-Un POST con usuario y contrasena desde `httpx` se choca con reCAPTCHA, con
-detectores de cliente o, en el caso de Welcome to the Jungle, con un reto de
-AWS WAF que solo se resuelve ejecutando JavaScript. Un Chromium de verdad los
-pasa porque *es* un navegador.
+Why it is needed: the four job boards with an account protect their login as
+well. A POST with username and password from `httpx` runs into reCAPTCHA, into
+client fingerprinting or, in the case of Welcome to the Jungle, into an AWS WAF
+challenge that is only solved by executing JavaScript. A real Chromium gets
+through because it *is* a browser.
 
-El truco esta en el perfil persistente. La primera vez abres la ventana y
-entras tu, con tu 2FA y tus captchas si los hay. A partir de ahi el perfil
-guarda la sesion en disco durante semanas, y refrescar las cookies ya no
-necesita ni contrasena.
+The trick is the persistent profile. The first time you open the window and
+sign in yourself, with your 2FA and your captchas if there are any. From then
+on the profile keeps the session on disk for weeks, and refreshing the cookies
+needs no password at all.
 
-Playwright es opcional: si no esta instalado, todo lo demas del bot funciona
-igual. Se instala con:
+Playwright is optional: if it is not installed, everything else in the bot
+works the same. Install it with:
 
     pip install -e ".[browser]"
     playwright install chromium
@@ -27,7 +27,7 @@ from types import TracebackType
 
 logger = logging.getLogger(__name__)
 
-# Donde entrar en cada portal y con que dominio se queda la cookie.
+# Where to sign in on each board, and which domain the cookie belongs to.
 PORTALS = {
     "infojobs": {
         "login_url": "https://www.infojobs.net/candidate/profile/index.xhtml",
@@ -51,18 +51,18 @@ PORTALS = {
     },
 }
 
-# El navegador tarda en pintar una SPA; sin esta espera se lee una pagina vacia.
+# A browser takes time to paint a SPA; without this wait you read a blank page.
 RENDER_WAIT_MS = 7000
 
 
 class BrowserUnavailable(RuntimeError):
-    """Playwright no esta instalado, o falta el binario de Chromium."""
+    """Playwright is not installed, or the Chromium binary is missing."""
 
 
 def require_playwright():
     try:
         from playwright.async_api import async_playwright
-    except ImportError as exc:  # pragma: no cover - depende del entorno
+    except ImportError as exc:  # pragma: no cover - depends on the environment
         raise BrowserUnavailable(
             "Falta Playwright. Instalalo con:\n"
             '    pip install -e ".[browser]"\n'
@@ -72,11 +72,11 @@ def require_playwright():
 
 
 class BrowserSession:
-    """Chromium con perfil persistente.
+    """Chromium with a persistent profile.
 
-    El perfil vive en `data/browser-profile/` y es lo que hace que no tengas
-    que volver a loguearte cada vez. Tratalo como una sesion abierta de tu
-    navegador: quien copie esa carpeta entra en tus cuentas.
+    The profile lives in `data/browser-profile/` and is what saves you from
+    signing in again every time. Treat it like an open browser session:
+    whoever copies that folder gets into your accounts.
     """
 
     def __init__(
@@ -98,12 +98,12 @@ class BrowserSession:
         self.profile_dir.mkdir(parents=True, exist_ok=True)
 
         self._playwright = await async_playwright().start()
-        if self._playwright is None:  # pragma: no cover - no pasa en la practica
+        if self._playwright is None:  # pragma: no cover - does not happen in practice
             raise RuntimeError("Playwright no ha arrancado; revisa la instalacion")
-        # Chrome de verdad primero. Google bloquea el inicio de sesion en
-        # navegadores que detecta como automatizados ("este navegador puede no
-        # ser seguro"), y con el Chromium de Playwright pasa a menudo. Con el
-        # Chrome instalado y sin la bandera de automatizacion, no.
+        # Real Chrome first. Google blocks sign-in on browsers it detects as
+        # automated ("this browser may not be secure"), which happens often
+        # with Playwright's Chromium. With the installed Chrome and no
+        # automation flag, it does not.
         for channel in ("chrome", "msedge", None):
             try:
                 self._context = await self._playwright.chromium.launch_persistent_context(
@@ -115,7 +115,7 @@ class BrowserSession:
                     args=["--disable-blink-features=AutomationControlled"],
                     ignore_default_args=["--enable-automation"],
                 )
-            except Exception:  # noqa: BLE001 - probamos el siguiente canal
+            except Exception:  # noqa: BLE001 - try the next channel
                 continue
             self.channel = channel or "chromium"
             logger.debug("Navegador arrancado con el canal %s", self.channel)
@@ -127,7 +127,7 @@ class BrowserSession:
 
     @property
     def is_open(self) -> bool:
-        """False si has cerrado la ventana a mano."""
+        """False if you closed the window by hand."""
         return self._context is not None and not getattr(self._context, "_closed", False)
 
     async def __aexit__(
@@ -150,17 +150,17 @@ class BrowserSession:
         return self._context
 
     async def open(self, url: str, *, wait_ms: int = RENDER_WAIT_MS):
-        """Abre una pagina y espera a que la SPA termine de pintar."""
+        """Opens a page and waits for the SPA to finish painting."""
         page = await self.context.new_page()
         await page.goto(url, wait_until="domcontentloaded", timeout=60_000)
         await page.wait_for_timeout(wait_ms)
         return page
 
     async def fetch_html(self, url: str, *, wait_ms: int = RENDER_WAIT_MS) -> str:
-        """El HTML ya renderizado, para las fuentes que no se dejan leer de otra forma."""
+        """The rendered HTML, for sources that cannot be read any other way."""
         page = await self.open(url, wait_ms=wait_ms)
         try:
-            # Un scroll dispara la carga diferida de la mayoria de listados.
+            # A scroll triggers the lazy loading most listings use.
             await page.mouse.wheel(0, 4000)
             await page.wait_for_timeout(2000)
             return await page.content()
@@ -168,10 +168,10 @@ class BrowserSession:
             await page.close()
 
     async def cookie_header(self, domain: str) -> tuple[str, datetime | None]:
-        """Las cookies del dominio, ya montadas para la cabecera `Cookie`.
+        """The domain cookies, already assembled for the `Cookie` header.
 
-        Devuelve tambien la caducidad mas cercana, que es cuando la sesion
-        dejara de valer.
+        It also returns the nearest expiry, which is when the session stops
+        being valid.
         """
         cookies = await self.context.cookies()
         relevant = [
@@ -185,21 +185,21 @@ class BrowserSession:
         expiries = [
             datetime.fromtimestamp(cookie["expires"], tz=UTC)
             for cookie in relevant
-            # -1 significa cookie de sesion: muere al cerrar el navegador.
+            # -1 means a session cookie: it dies when the browser closes.
             if cookie.get("expires", -1) and cookie["expires"] > 0
         ]
         return header, min(expiries) if expiries else None
 
     async def try_form_login(self, page, user: str, password: str) -> bool:
-        """Rellena el formulario de login, si lo encuentra.
+        """Fills in the login form, if it finds one.
 
-        A proposito busca por tipo de campo y no por identificadores concretos:
-        los portales renombran sus ids cada dos por tres, pero un formulario de
-        login sigue teniendo un campo de email y uno de contrasena.
+        It deliberately looks for field types rather than specific identifiers:
+        job boards rename their ids constantly, but a login form still has an
+        email field and a password field.
 
-        Devuelve False cuando no encuentra el formulario o cuando aparece un
-        captcha: en ese caso te toca entrar a mano, que para eso la ventana
-        esta abierta.
+        Returns False when it cannot find the form or when a captcha shows up:
+        then it is on you to sign in by hand, which is what the open window is
+        for.
         """
         email_field = page.locator(
             'input[type="email"], input[name*="email" i], input[id*="email" i], '
@@ -210,7 +210,7 @@ class BrowserSession:
         try:
             await email_field.wait_for(state="visible", timeout=15_000)
             await password_field.wait_for(state="visible", timeout=5_000)
-        except Exception:  # noqa: BLE001 - cualquier fallo aqui significa "hazlo tu"
+        except Exception:  # noqa: BLE001 - any failure here means "do it yourself"
             logger.info("No encontre el formulario de login; entra a mano en la ventana.")
             return False
 

@@ -26,8 +26,8 @@ def test_presencial_se_descarta(criteria) -> None:
 
 
 def test_salario_por_debajo_del_minimo_se_descarta(criteria) -> None:
-    # El suelo se fija aqui a proposito: el de config.yaml es un ejemplo,
-    # porque el de verdad vive en .env.
+    # The floor is set here on purpose: the one in config.yaml is an example,
+    # because the real one lives in .env.
     criteria.salary.minimum = 40_000
     score = score_offer(make_offer(salary=SalaryRange(28_000, 34_000)), criteria)
     assert score.is_rejected
@@ -35,7 +35,7 @@ def test_salario_por_debajo_del_minimo_se_descarta(criteria) -> None:
 
 
 def test_cuarenta_mil_entra(criteria) -> None:
-    """El usuario bajo el minimo a 40k; una oferta de 40-45k debe pasar."""
+    """The user lowered the floor to 40k; a 40-45k posting has to get through."""
     score = score_offer(make_offer(salary=SalaryRange(40_000, 45_000)), criteria)
     assert not score.is_rejected
     assert score.value >= 6
@@ -77,8 +77,8 @@ def test_oferta_de_otro_mundo_se_descarta(criteria) -> None:
 
 
 def test_titulo_de_otro_perfil_se_descarta(criteria) -> None:
-    """El caso real que se colaba: la descripcion listaba medio ecosistema y
-    la oferta puntuaba 8 aunque el puesto fuese de otra cosa."""
+    """The real case that slipped through: the description listed half an
+    ecosystem and the posting scored 8 even though the role was something else."""
     for title in (
         "Senior .NET Full-stack Developer",
         "Senior React Native Developer",
@@ -91,7 +91,7 @@ def test_titulo_de_otro_perfil_se_descarta(criteria) -> None:
 
 
 def test_titulo_mixto_sobrevive_si_nombra_el_stack(criteria) -> None:
-    # "Python/PHP Backend Developer" si es candidato: el titulo nombra Python.
+    # "Python/PHP Backend Developer" does qualify: the title names Python.
     score = score_offer(make_offer(title="Backend Developer Python / PHP"), criteria)
     assert not score.is_rejected
 
@@ -102,7 +102,7 @@ def test_oferta_caducada_se_descarta(criteria) -> None:
 
 
 def test_hibrido_se_descarta(criteria) -> None:
-    """Vive lejos de una capital: un hibrido en Madrid no le sirve."""
+    """He lives far from a big city: a hybrid role in Madrid is no use."""
     score = score_offer(make_offer(work_mode=WorkMode.HYBRID), criteria)
     assert score.is_rejected
     assert any("hybrid" in reason for reason in score.blockers)
@@ -115,25 +115,25 @@ def test_remoto_puntua_mas_que_sin_especificar(criteria) -> None:
 
 
 def test_titulo_de_java_se_descarta(criteria) -> None:
-    """Se colo un "Senior Java & React Developer": el patron pedia
-    "java developer" y ese titulo no lo tiene."""
+    """A "Senior Java & React Developer" slipped through: the pattern asked
+    for "java developer" and that title does not have it."""
     score = score_offer(make_offer(title="Senior Java & React Developer"), criteria)
     assert score.is_rejected
 
-    # Pero "java" no puede casar dentro de "javascript".
+    # But "java" must not match inside "javascript".
     js = score_offer(make_offer(title="Backend Developer JavaScript"), criteria)
     assert not js.is_rejected
 
 
 def test_limites_de_palabra() -> None:
-    # "go" no debe casar dentro de "django", ni "aws" dentro de "awsome".
+    # "go" must not match inside "django", nor "aws" inside "awsome".
     assert contains_term("we use django", "go") is False
     assert contains_term("node.js and typescript", "node.js") is True
     assert contains_term("stack asp.net legacy", ".net") is True
 
 
 def test_remoto_pero_solo_dentro_de_eeuu_se_descarta(criteria) -> None:
-    """Son remotas de verdad, pero no las puede aceptar desde Espana."""
+    """They are genuinely remote, but he cannot take them from Spain."""
     offer = make_offer(
         title="Senior Backend Engineer",
         description=(
@@ -155,9 +155,9 @@ def test_remota_mundial_sigue_entrando(criteria) -> None:
 
 
 def test_las_bolsas_propias_aguantan_mas_pero_no_infinito(criteria) -> None:
-    """Dos meses en un agregador es una oferta muerta; en la bolsa de una
-    empresa el puesto sigue vacante. Pero un anuncio de un ano es un req
-    fantasma en cualquier sitio."""
+    """Two months on an aggregator is a dead posting; on a company board the
+    role is still open. But a year-old listing is a ghost req anywhere.
+    """
     hace_dos_meses = date.today() - timedelta(days=60)
     hace_un_ano = date.today() - timedelta(days=365)
 
@@ -170,8 +170,8 @@ def test_las_bolsas_propias_aguantan_mas_pero_no_infinito(criteria) -> None:
 
 
 def test_tope_de_solicitantes_opcional(criteria) -> None:
-    """Apagado por defecto: solo LinkedIn publica el dato, y un tope dejaria
-    en desventaja a las fuentes que no lo dan."""
+    """Off by default: only LinkedIn publishes the number, and a cap would
+    penalise the sources that do not report it."""
     con_cola = make_offer(applicants=180)
     assert not score_offer(con_cola, criteria).is_rejected
 
@@ -180,19 +180,19 @@ def test_tope_de_solicitantes_opcional(criteria) -> None:
     assert score.is_rejected
     assert any("demasiada cola" in r for r in score.blockers)
 
-    # Y una sin dato nunca se bloquea por esto.
+    # And one with no data is never blocked over this.
     assert not score_offer(make_offer(), criteria).is_rejected
 
 
 def _oferta_del_monton(**extra):
-    """Una oferta correcta pero no sobresaliente. La ideal ya saca un 10 y el
-    tope tapa el efecto de cualquier bonificacion."""
+    """A decent but unremarkable posting. The ideal one already scores 10 and
+    the cap hides the effect of any bonus."""
     return make_offer(salary=SalaryRange(), description="Backend con Python y PostgreSQL.", **extra)
 
 
 def test_llegar_pronto_suma_y_la_cola_resta(criteria) -> None:
-    """Lo que hace util el filtro de "menos de 10 solicitantes" de LinkedIn:
-    la misma oferta no vale lo mismo con 6 candidatos que con 200."""
+    """What makes LinkedIn's "fewer than 10 applicants" filter useful: the
+    same posting is not worth the same with 6 candidates as with 200."""
     sin_dato = score_offer(_oferta_del_monton(), criteria)
     pronto = score_offer(_oferta_del_monton(applicants=6), criteria)
     cola = score_offer(_oferta_del_monton(applicants=200), criteria)

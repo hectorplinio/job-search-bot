@@ -1,4 +1,4 @@
-"""Perfil del candidato, cargado desde profile/cv.yaml."""
+"""The candidate profile, loaded from profile/cv.yaml."""
 
 from __future__ import annotations
 
@@ -24,17 +24,17 @@ class Experience(BaseModel):
 
 
 class AnchorRule(BaseModel):
-    """Si la oferta menciona una de estas palabras, apoya la carta en esa
-    experiencia."""
+    """If the posting mentions one of these words, lean the letter on that
+    experience."""
 
     keywords: list[str] = Field(default_factory=list)
     experience: str
 
 
 class CoverLetterAnchors(BaseModel):
-    """Que experiencia destacar en la cover letter. Los valores son ids de
-    `experience`, asi que cada perfil trae los suyos y el prompt no sabe nada
-    de ninguna empresa concreta."""
+    """Which experience to highlight in the cover letter. The values are ids
+    from `experience`, so every profile brings its own and the prompt knows
+    nothing about any particular company."""
 
     always: str | None = None
     when: list[AnchorRule] = Field(default_factory=list)
@@ -66,10 +66,10 @@ class CandidateProfile(BaseModel):
         return [skill for group in self.skills.values() for skill in group]
 
     def emphasis_for(self, offer_text: str) -> list[Experience]:
-        """Experiencias a destacar segun lo que menciona la oferta.
+        """The experiences to highlight, based on what the posting mentions.
 
-        Devuelve las que mas veces aparecen referenciadas, sin repetir, y
-        completa con el orden cronologico si la oferta no dispara ninguna regla.
+        Returns the most referenced ones, without repeats, and falls back to
+        chronological order when the posting triggers no rule at all.
         """
         lowered = offer_text.lower()
         votes: dict[str, int] = {}
@@ -86,7 +86,7 @@ class CandidateProfile(BaseModel):
         return chosen
 
     def as_context(self) -> str:
-        """Version en texto plano del perfil, para meterla en el prompt."""
+        """A plain-text view of the profile, to drop into the prompt."""
         lines = [
             f"Name: {self.name}",
             f"Headline: {self.headline}",

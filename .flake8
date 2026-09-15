@@ -1,10 +1,9 @@
 [flake8]
-# flake8 no lee pyproject.toml, por eso su configuracion vive aqui.
+# flake8 does not read pyproject.toml, which is why its config lives here.
 max-line-length = 100
 
-# E203 y W503 chocan con el estilo de Black (espacio antes de ':' en slices y
-# salto de linea antes de un operador binario). Los desactiva el propio manual
-# de Black.
+# E203 and W503 clash with Black's style (a space before ':' in slices, and a
+# line break before a binary operator). Black's own manual disables them.
 extend-ignore = E203, W503
 
 exclude =
@@ -16,5 +15,6 @@ exclude =
     *.egg-info
 
 per-file-ignores =
-    # Los fixtures son HTML copiado de los portales: partirlos los falsearia.
+    # The fixtures are HTML copied from the job boards: splitting them would
+    # falsify them.
     tests/test_sources.py:E501

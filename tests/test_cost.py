@@ -9,21 +9,21 @@ from jobbot.domain.cost import TokenUsage, cost_usd, format_cost
 
 
 def test_precio_de_opus() -> None:
-    # 1M de entrada son 5 $, 1M de salida son 25 $.
+    # 1M input tokens is $5, 1M output tokens is $25.
     assert cost_usd(TokenUsage("claude-opus-5", input_tokens=1_000_000)) == pytest.approx(5.0)
     assert cost_usd(TokenUsage("claude-opus-5", output_tokens=1_000_000)) == pytest.approx(25.0)
 
 
 def test_la_cache_abarata_la_lectura() -> None:
-    """Leer de cache cuesta la decima parte que enviar el token entero."""
+    """A cache read costs a tenth of sending the whole token."""
     normal = cost_usd(TokenUsage("claude-opus-5", input_tokens=100_000))
     cacheado = cost_usd(TokenUsage("claude-opus-5", cache_read_tokens=100_000))
     assert cacheado == pytest.approx(normal * 0.1)
 
 
 def test_un_modelo_desconocido_no_subestima() -> None:
-    """Si se cambia de modelo y nadie actualiza la tabla, mejor pasarse que
-    quedarse corto en la factura."""
+    """If the model changes and nobody updates the table, better to overshoot
+    than to undershoot the bill."""
     raro = cost_usd(TokenUsage("modelo-que-no-existe", input_tokens=1_000_000))
     opus = cost_usd(TokenUsage("claude-opus-5", input_tokens=1_000_000))
     assert raro == opus
@@ -48,8 +48,8 @@ def test_el_registro_acumula_por_periodo(tmp_path) -> None:
 
 
 def test_el_coste_se_congela_al_apuntarlo(tmp_path) -> None:
-    """Se guarda el importe, no solo los tokens: si Anthropic cambia precios,
-    lo ya gastado sigue contando con el precio de entonces."""
+    """The amount is stored, not just the tokens: if Anthropic changes prices,
+    what was already spent still counts at the price of that day."""
     log = SqliteUsageLog(tmp_path / "uso.sqlite3")
     apuntado = log.record(TokenUsage("claude-opus-5", input_tokens=1_000_000), "puntuar")
 
@@ -70,7 +70,7 @@ def test_desglosa_en_que_se_va(tmp_path) -> None:
     log.record(TokenUsage("claude-opus-5", output_tokens=100), "puntuar ofertas")
 
     filas = log.by_operation()
-    # Ordenado de mas caro a mas barato.
+    # Ordered from most to least expensive.
     assert [f["operation"] for f in filas] == ["escribir candidatura", "puntuar ofertas"]
     log.close()
 

@@ -1,9 +1,9 @@
-"""Lee una oferta suelta a partir de su URL (modo manual).
+"""Reads a single posting from its URL (manual mode).
 
-Casi todos los portales publican un bloque JSON-LD de tipo JobPosting porque
-lo necesitan para Google for Jobs. Eso da titulo, empresa, salario y
-descripcion sin escribir un parser por sitio. Cuando no esta, se cae a
-extraer el texto principal de la pagina.
+Nearly every job board publishes a JSON-LD JobPosting block, because they need
+it for Google for Jobs. That gives title, company, salary and description
+without writing a parser per site. When it is missing, it falls back to
+extracting the main text of the page.
 """
 
 from __future__ import annotations
@@ -27,11 +27,11 @@ LINKEDIN_DETAIL = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_
 
 
 class UnreadableOffer(RuntimeError):
-    """La pagina existe pero no hay forma de sacar una oferta de ella."""
+    """The page exists but there is no way to get a posting out of it."""
 
 
 class HtmlOfferReader:
-    """Implementacion de OfferReader."""
+    """OfferReader implementation."""
 
     def __init__(self, http: HttpClient) -> None:
         self.http = http
@@ -52,7 +52,7 @@ class HtmlOfferReader:
 
     @staticmethod
     def from_text(text: str) -> JobOffer:
-        """Cuando pegas el texto de la oferta en vez del enlace."""
+        """For when you paste the text of the posting instead of the link."""
         cleaned = clean_text(text)
         first_line = cleaned.split(".")[0][:120]
         return JobOffer(
@@ -68,8 +68,8 @@ class HtmlOfferReader:
 
     @staticmethod
     def _rewrite(url: str) -> str:
-        """LinkedIn no sirve la oferta a un cliente sin sesion, pero su
-        endpoint de invitado si."""
+        """LinkedIn does not serve the posting to a client without a session,
+        but its guest endpoint does."""
         if "linkedin.com" in url:
             match = LINKEDIN_JOB_ID.search(url)
             if match:

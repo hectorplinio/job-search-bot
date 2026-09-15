@@ -1,12 +1,12 @@
 """Himalayas.
 
-API publica en JSON, sin clave, orientada a empresas remote-first, muchas de
-ellas estadounidenses.
+A public JSON API, no key, aimed at remote-first companies, many of them from
+the United States.
 
-Su campo `locationRestrictions` es el dato mas preciso de todas las fuentes:
-una lista explicita de paises desde los que admiten candidatos. Vacia
-significa sin restriccion. Con eso se sabe con certeza si puedes aplicar desde
-Espana, en vez de deducirlo del texto de la oferta.
+Its `locationRestrictions` field is the most precise piece of data any source
+gives: an explicit list of countries they accept candidates from. Empty means
+no restriction. With that you know for certain whether you can apply from
+Spain, instead of inferring it from the posting text.
 """
 
 from __future__ import annotations
@@ -23,9 +23,9 @@ from .base import BaseSource, can_work_from, clean_text
 logger = logging.getLogger(__name__)
 
 API_URL = "https://himalayas.app/jobs/api"
-# Sirve 20 por peticion aunque le pidas 100, pero el offset si funciona y su
-# catalogo pasa de 100.000 ofertas. Sin paginar se veian veinte y tres cuartos
-# de ellas eran solo para Estados Unidos.
+# It serves 20 per request even if you ask for 100, but the offset does work
+# and its catalogue is over 100,000 postings. Without paging you saw twenty,
+# and three quarters of those were United States only.
 PAGE_SIZE = 20
 DEFAULT_PAGES = 6
 
@@ -59,14 +59,14 @@ class HimalayasSource(BaseSource):
         return offers[: criteria.search.max_results_per_source]
 
     async def _fetch_pages(self, pages: int) -> list[dict]:
-        """Recorre el catalogo por offset hasta agotarlo o llegar al tope."""
+        """Walks the catalogue by offset until it runs out or hits the cap."""
         recogidas: list[dict] = []
         vistos: set[str] = set()
         for numero in range(pages):
             params = {"limit": PAGE_SIZE, "offset": numero * PAGE_SIZE}
             try:
                 payload = await self.http.get_json(API_URL, params=params)
-            except Exception:  # noqa: BLE001 - una pagina fallida no anula las demas
+            except Exception:  # noqa: BLE001 - one failed page does not void the others
                 logger.debug("Himalayas fallo en el offset %s", numero * PAGE_SIZE)
                 break
 
@@ -76,7 +76,7 @@ class HimalayasSource(BaseSource):
             nuevas = [row for row in pagina if row.get("guid") not in vistos]
             vistos.update(row.get("guid") for row in pagina)
             recogidas.extend(nuevas)
-            # Si deja de dar ofertas nuevas, no tiene sentido seguir pidiendo.
+            # If it stops returning new postings, asking for more is pointless.
             if not nuevas:
                 break
         return recogidas
@@ -97,7 +97,7 @@ class HimalayasSource(BaseSource):
         posted_at = None
         raw = row.get("pubDate") or row.get("publishedDate")
         if isinstance(raw, int | float):
-            # Lo publican como epoch en segundos.
+            # They publish it as an epoch in seconds.
             posted_at = datetime.fromtimestamp(raw, tz=UTC).date()
         elif raw:
             try:

@@ -1,8 +1,8 @@
-"""Adaptador de Claude: segunda opinion del scoring y redaccion de materiales.
+"""The Claude adapter: a second opinion on scoring, and writing materials.
 
-Usa salidas estructuradas (`messages.parse`) para no tener que parsear texto
-libre: si el modelo se sale del esquema, el SDK lo rechaza y aqui nos quedamos
-con la nota de reglas, que siempre existe.
+It uses structured outputs (`messages.parse`) to avoid parsing free text: if
+the model strays from the schema the SDK rejects it, and we fall back to the
+rule-based score, which always exists.
 """
 
 from __future__ import annotations
@@ -21,8 +21,8 @@ from .prompts import rating_prompt, rating_system, writing_prompt, writing_syste
 logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "claude-opus-5"
-# Cuantas ofertas van en una misma llamada de scoring. Mas grande sale mas
-# barato, pero el modelo empieza a mezclar unas con otras.
+# How many postings go into a single scoring call. Bigger is cheaper, but the
+# model starts mixing them up with one another.
 RATING_BATCH_SIZE = 6
 
 
@@ -46,7 +46,7 @@ class DocumentsOutput(BaseModel):
 
 
 class AnthropicWriter:
-    """Implementacion de DocumentWriter contra la Messages API."""
+    """DocumentWriter implemented against the Messages API."""
 
     def __init__(
         self,
@@ -62,7 +62,7 @@ class AnthropicWriter:
         self._usage_log = usage_log
 
     def _record(self, response, operation: str) -> None:
-        """Apunta lo gastado. Nunca puede tumbar la llamada que ya salio bien."""
+        """Records the spend. It must never sink a call that already worked."""
         if self._usage_log is None:
             return
         try:
@@ -77,7 +77,7 @@ class AnthropicWriter:
                 ),
                 operation,
             )
-        except Exception:  # noqa: BLE001 - contabilidad, no la tarea
+        except Exception:  # noqa: BLE001 - bookkeeping, not the task itself
             logger.warning("No pude apuntar el gasto de la llamada", exc_info=True)
 
     async def rate(
@@ -88,10 +88,10 @@ class AnthropicWriter:
         salary_minimum: int,
         salary_target: int,
     ) -> list[tuple[MatchScore, str]]:
-        """Reevalua un lote de ofertas.
+        """Re-scores a batch of postings.
 
-        Devuelve, en el mismo orden, la nota final y el resumen de encaje. Si
-        una llamada falla, esas ofertas conservan su nota de reglas.
+        Returns, in the same order, the final score and the fit summary. If a
+        call fails, those postings keep their rule-based score.
         """
         if not candidates:
             return []

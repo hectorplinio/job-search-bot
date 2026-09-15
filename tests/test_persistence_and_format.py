@@ -48,8 +48,8 @@ def test_top_pending_ordena_por_nota(tmp_path) -> None:
         pendientes = repository.top_pending(limit=5)
         assert [item.offer.company for item in pendientes] == ["Buena", "Floja"]
 
-        # Y con umbral, la floja no sale: /top no debe mandarte lo que la
-        # busqueda automatica habria descartado por nota baja.
+        # And with a threshold the weak one stays out: /top must not send you
+        # what the automatic search would have dropped for a low score.
         buenas = repository.top_pending(limit=5, min_score=8)
         assert [item.offer.company for item in buenas] == ["Buena"]
 
@@ -90,8 +90,8 @@ def test_mensaje_sin_salario_lo_dice() -> None:
 
 
 async def test_el_notificador_espacia_los_mensajes() -> None:
-    """Telegram descarta los envios seguidos en un mismo chat. Sin pausa,
-    de 40 ofertas te llegarian 25 y las demas se perderian en silencio."""
+    """Telegram drops back-to-back sends in the same chat. With no pause, out
+    of 40 postings you would get 25 and the rest would vanish silently."""
     from jobbot.adapters.telegram_notifier import TelegramNotifier
 
     esperas: list[float] = []
@@ -122,5 +122,5 @@ async def test_el_notificador_espacia_los_mensajes() -> None:
         modulo.asyncio.sleep = original
 
     assert len(enviados) == 3
-    # El primero sale ya; los otros dos esperan su turno.
+    # The first goes out immediately; the other two wait their turn.
     assert esperas == [1.2, 1.2]

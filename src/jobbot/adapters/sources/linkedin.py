@@ -1,9 +1,9 @@
-"""LinkedIn Jobs, via el endpoint publico de invitado.
+"""LinkedIn Jobs, through the public guest endpoint.
 
-No hace falta login ni API key: es el mismo endpoint que usa la web cuando
-haces scroll sin estar logueado. A cambio, limita bastante y las tarjetas no
-traen descripcion, asi que la ficha se pide aparte solo para las que pasan
-el primer corte.
+No login and no API key needed: it is the same endpoint the site uses when you
+scroll while signed out. In exchange it is heavily rate-limited and the cards
+carry no description, so the detail page is fetched separately, only for the
+ones that pass the first cut.
 """
 
 from __future__ import annotations
@@ -25,17 +25,17 @@ SEARCH_URL = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/se
 DETAIL_URL = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}"
 _JOB_ID = re.compile(r"urn:li:jobPosting:(\d+)")
 
-# f_TPR: ventana temporal en segundos. r604800 = ultima semana.
+# f_TPR: time window in seconds. r604800 = the last week.
 TIME_WINDOWS = {7: "r604800", 14: "r1209600", 30: "r2592000"}
 
-# El endpoint de invitado sirve 10 por peticion, no mas. Sin paginar solo se
-# veian las diez primeras de cada busqueda, y una oferta que rankee baja no
-# aparecia jamas aunque encajara perfectamente.
+# The guest endpoint serves 10 per request, no more. Without pagination you
+# only saw the first ten of each search, and a posting that ranks low never
+# showed up even when it was a perfect fit.
 PAGE_SIZE = 10
 DEFAULT_PAGES = 3
 
-# "40 solicitudes", "Mas de 200 solicitudes", "Over 200 applicants". Solo sale
-# en la ficha, y aproximadamente en la mitad de las ofertas.
+# "40 solicitudes", "Mas de 200 solicitudes", "Over 200 applicants". It only
+# appears on the detail page, and in roughly half the postings.
 _APPLICANTS = re.compile(r"(m[aá]s de|over)?\s*([\d.,]+)\s*(?:solicitud|applicant)", re.I)
 
 
@@ -44,8 +44,9 @@ class LinkedInSource(BaseSource):
 
     async def search(self, criteria: Criteria) -> list[JobOffer]:
         if self.has_session:
-            # Aviso a proposito en cada ejecucion: es la fuente donde usar tu
-            # cuenta te puede costar la cuenta, y la que menos gana con ello.
+            # Warned on every run on purpose: this is the source where using
+            # your account can cost you the account, and the one that gains
+            # least from it.
             logger.warning(
                 "LinkedIn va con tu sesion. El endpoint de invitado ya devuelve "
                 "los mismos resultados sin arriesgar el perfil; ver README."
@@ -54,8 +55,8 @@ class LinkedInSource(BaseSource):
         window = self._time_window(criteria.search.max_age_days)
         pages = int(self.options.get("pages", DEFAULT_PAGES))
 
-        # Un grupo por busqueda, para luego alternarlos y que ninguna acapare
-        # el cupo de la fuente.
+        # One group per search, so they can be interleaved later and no single
+        # search hogs the source's quota.
         groups: list[list[JobOffer]] = []
         for query in self.queries(criteria):
             for location in criteria.search.locations:
@@ -78,14 +79,14 @@ class LinkedInSource(BaseSource):
         criteria: Criteria,
         pages: int,
     ) -> list[JobOffer]:
-        """Una busqueda, recorriendo sus paginas hasta agotarlas."""
+        """One search, walking its pages until they run out."""
         encontradas: list[JobOffer] = []
         for numero in range(pages):
             pagina = await self._search_once(
                 query, location, workplace_types, window, criteria, numero * PAGE_SIZE
             )
             encontradas.extend(pagina)
-            # Una pagina incompleta significa que no hay mas resultados.
+            # An incomplete page means there are no more results.
             if len(pagina) < PAGE_SIZE:
                 break
             if len(encontradas) >= criteria.search.max_results_per_query:
@@ -116,13 +117,13 @@ class LinkedInSource(BaseSource):
             "start": start,
             "sortBy": "DD",
         }
-        # f_AL=true es "Solicitud sencilla": se aplica desde LinkedIn, sin
-        # formularios de terceros. Cambia el conjunto de resultados.
+        # f_AL=true is "Easy Apply": you apply from LinkedIn, with no
+        # third-party forms. It changes the result set.
         if self.options.get("easy_apply_only"):
             params["f_AL"] = "true"
         try:
             html = await self.http.get_text(SEARCH_URL, params=params, headers=self.auth_headers())
-        except Exception:  # noqa: BLE001 - una query fallida no invalida el resto
+        except Exception:  # noqa: BLE001 - one failed query does not invalidate the rest
             logger.debug("LinkedIn rechazo la query %r en %r", query, location)
             return []
 
@@ -165,10 +166,10 @@ class LinkedInSource(BaseSource):
 
     @staticmethod
     def _parse_applicants(texto: str) -> int | None:
-        """Cuantos han solicitado ya, si la ficha lo dice.
+        """How many have already applied, if the detail page says so.
 
-        "Mas de 200" se guarda como 200: para decidir da igual si son 200 o
-        340, lo que importa es que la cola es larga.
+        "Mas de 200" is stored as 200: for deciding it makes no difference
+        whether it is 200 or 340, what matters is that the queue is long.
         """
         match = _APPLICANTS.search(texto)
         if match is None:
@@ -199,9 +200,9 @@ class LinkedInSource(BaseSource):
         if solicitantes is not None:
             enriched = replace(enriched, applicants=solicitantes)
 
-        # La tarjeta casi nunca trae salario ni modalidad; la ficha si, y ya
-        # la hemos descargado. Sin esto casi todas las ofertas de LinkedIn
-        # llegan como "Modalidad sin especificar" y puntuan de menos.
+        # The card almost never carries salary or work mode; the detail page
+        # does, and we have already downloaded it. Without this nearly every
+        # LinkedIn posting arrives as "work mode unknown" and scores too low.
         if not enriched.salary.is_known:
             enriched = replace(enriched, salary=parse_salary(full_text))
         if enriched.work_mode is WorkMode.UNKNOWN:

@@ -1,8 +1,8 @@
-"""Cliente HTTP compartido por todos los scrapers.
+"""The HTTP client shared by every scraper.
 
-Los portales de empleo cortan el grifo en cuanto notan trafico automatico, asi
-que aqui van el user-agent de navegador, el throttle por host y el reintento
-con backoff. Un scraper que no encuentra nada devuelve [], nunca revienta.
+Job boards cut you off the moment they notice automated traffic, so the
+browser user-agent, the per-host throttle and the retry with backoff all live
+here. A scraper that finds nothing returns [], it never blows up.
 """
 
 from __future__ import annotations
@@ -34,11 +34,11 @@ RETRYABLE_STATUS = {408, 425, 429, 500, 502, 503, 504}
 
 
 class HttpError(RuntimeError):
-    """La peticion fallo despues de agotar los reintentos."""
+    """The request failed after exhausting the retries."""
 
 
 class HttpClient:
-    """Wrapper fino sobre httpx con throttle por dominio y reintentos."""
+    """A thin wrapper over httpx with per-domain throttling and retries."""
 
     def __init__(
         self,
@@ -70,7 +70,7 @@ class HttpClient:
             self._client = None
 
     async def _throttle(self, host: str) -> None:
-        """Espacia las peticiones a un mismo host, con jitter."""
+        """Spaces out requests to the same host, with jitter."""
         async with self._locks[host]:
             elapsed = time.monotonic() - self._last_call[host]
             wait = self._min_interval - elapsed

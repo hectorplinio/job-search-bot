@@ -1,8 +1,8 @@
 name: CI
 
-# Los tests no tocan la red: cada adaptador se prueba contra fixtures copiados
-# de la respuesta real del portal. Por eso esto corre sin secretos y en
-# cualquier runner limpio.
+# The tests never touch the network: each adapter is tested against fixtures
+# copied from the job board's real response. That is why this runs with no
+# secrets, on any clean runner.
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # La version minima que declara pyproject y la que uso en local.
+        # The minimum version pyproject declares, and the one used locally.
         python-version: ["3.11", "3.12"]
 
     steps:
@@ -35,31 +35,31 @@ jobs:
             requirements.txt
             requirements-dev.txt
 
-      - name: Instalar dependencias
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           make install-dev
 
-      # Las recetas viven en el Makefile para que esto sea exactamente lo
-      # mismo que ejecutas en tu maquina con `make check`.
+      # The recipes live in the Makefile so this is exactly what you run on
+      # your own machine with `make check`.
       - name: Lint (ruff + flake8)
         run: make lint
 
-      # Black es el formateador de referencia. `ruff format` no se usa a
-      # proposito: discrepan en los literales multilinea, y dos formateadores
-      # se reescriben el codigo el uno al otro.
-      - name: Tipos (mypy)
+      # Black is the formatter of record. `ruff format` is deliberately not
+      # used: they disagree on multiline literals, and two formatters rewrite
+      # each other's code.
+      - name: Types (mypy)
         run: make types
 
-      - name: Formato (black)
+      - name: Format (black)
         run: make format-check
 
       - name: Tests
         run: make test
 
   config:
-    # Los ficheros de criterios son la interfaz del proyecto: si uno deja de
-    # cargar, el bot no arranca. Se valida tambien el perfil de ejemplo.
+    # The criteria files are the project's interface: if one stops loading, the
+    # bot does not start. The example profile is validated too.
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -68,5 +68,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: make install
-      - name: Los criterios y los perfiles cargan
+      - name: The criteria and the profiles load
         run: make config-check

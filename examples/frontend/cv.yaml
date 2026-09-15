@@ -1,5 +1,5 @@
-# Perfil de ejemplo: una desarrolladora frontend. Sirve para comprobar que el
-# bot no esta atado al perfil de backend con el que nacio.
+# Example profile: a frontend developer. It is here to show the bot is not
+# tied to the backend profile it was born with.
 #
 #   JOBBOT_PROFILE_PATH=examples/frontend/cv.yaml
 #   JOBBOT_CONFIG_PATH=examples/frontend/config.yaml
@@ -7,7 +7,7 @@
 
 name: Ada Ejemplo
 headline: Frontend Software Engineer
-# Vacio a proposito: en un repo publico lo rastrean los bots de spam.
+# Empty on purpose: in a public repo the spam bots crawl it.
 email: ""
 languages:
   - "Spanish: native"
@@ -65,7 +65,7 @@ experience:
 education:
   - "Higher National Diploma in Web Application Development, 2020"
 
-# Que experiencia destaca la carta segun lo que pida la oferta.
+# Which experience the letter highlights, based on what the posting asks for.
 emphasis_rules:
   react: [mapamundi, tienda_verde]
   typescript: [mapamundi]

@@ -1,8 +1,8 @@
 """Tecnoempleo.com.
 
-HTML renderizado en servidor y sin proteccion antibot. Las tarjetas traen
-titulo, empresa, ciudad, modalidad entre parentesis, fecha y un extracto de la
-descripcion, que suele ser suficiente para puntuar sin abrir la ficha.
+Server-rendered HTML with no antibot protection. The cards carry title,
+company, city, work mode in brackets, date and an excerpt of the description,
+which is usually enough to score without opening the detail page.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 BASE = "https://www.tecnoempleo.com"
 SEARCH_URL = f"{BASE}/ofertas-trabajo/"
-# Las fichas cuelgan de /<slug-empresa>/<tecnologias>/rf-<hash>
+# Detail pages hang off /<company-slug>/<technologies>/rf-<hash>
 _OFFER_HREF = re.compile(r"/rf-[0-9a-f]+$")
 _MODE_IN_PARENS = re.compile(r"\(([^)]+)\)")
 
@@ -73,7 +73,7 @@ class TecnoempleoSource(BaseSource):
         company_link = card.select_one("a.link-muted, a.text-primary")
         company = clean_text(company_link.get_text()) if company_link else ""
 
-        # La columna derecha lleva fecha, ciudad, modalidad y categoria.
+        # The right-hand column carries date, city, work mode and category.
         meta_blocks = [clean_text(block.get_text(" ")) for block in card.select("span")]
         meta = " | ".join(block for block in meta_blocks if block)
 
@@ -97,7 +97,7 @@ class TecnoempleoSource(BaseSource):
 
     @staticmethod
     def _location_and_mode(meta: str) -> tuple[str | None, WorkMode]:
-        """Tecnoempleo escribe 'Madrid (Híbrido)' o 'Barcelona (Teletrabajo)'."""
+        """Tecnoempleo writes 'Madrid (Híbrido)' or 'Barcelona (Teletrabajo)'."""
         match = _MODE_IN_PARENS.search(meta)
         mode_text = match.group(1) if match else ""
         city_match = re.search(r"([A-ZÁÉÍÓÚÑ][\wáéíóúñ.\- ]{2,30})\s*\(", meta)

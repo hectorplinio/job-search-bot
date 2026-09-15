@@ -1,7 +1,7 @@
-"""Puntuacion de una oferta contra el perfil, del 1 al 10.
+"""Scoring a posting against the profile, from 1 to 10.
 
-Todo esto es una funcion pura: misma oferta y mismos criterios, misma nota.
-El LLM puede afinarla despues, pero nunca resucita una oferta bloqueada aqui.
+All of this is a pure function: same posting and same criteria, same score.
+The LLM may refine it later, but it never revives a posting blocked here.
 """
 
 from __future__ import annotations
@@ -16,19 +16,19 @@ from .models import JobOffer, MatchScore, WorkMode
 SENIOR_MARKERS = ("senior", "sr.", "staff", "principal", "lead", "architect", "iv", "iii")
 MODERN_STACK = ("python", "node.js", "nodejs", "node js", "typescript", "golang", "go ", "rust")
 
-# Reparto de los 100 puntos internos antes de convertir a nota 1-10.
+# How the 100 internal points are split before mapping to a 1-10 score.
 WEIGHT_STACK = 45
 WEIGHT_SALARY = 25
 WEIGHT_WORK_MODE = 20
 WEIGHT_SENIORITY = 10
 
-# Peso acumulado de keywords a partir del cual el bloque de stack va lleno.
+# Accumulated keyword weight at which the stack block scores full marks.
 STACK_SATURATION = 40
 
 
 @lru_cache(maxsize=512)
 def _pattern(term: str) -> re.Pattern[str]:
-    """Regex con limites de palabra tolerante a '.net', 'node.js', 'c#'."""
+    """Word-boundary regex that tolerates '.net', 'node.js' and 'c#'."""
     escaped = re.escape(term.lower())
     prefix = "" if not term[0].isalnum() else r"(?<![a-z0-9+#])"
     suffix = "" if not term[-1].isalnum() else r"(?![a-z0-9#])"
@@ -52,8 +52,8 @@ def _blockers(offer: JobOffer, criteria: Criteria, today: date) -> list[str]:
     if bad_titles:
         reasons.append(f"titulo excluido: {', '.join(bad_titles)}")
 
-    # El titulo manda. Una descripcion larga menciona medio ecosistema y
-    # cualquier oferta acaba pareciendo del perfil; el titulo, no.
+    # The title decides. A long description name-drops half an ecosystem and
+    # every posting ends up looking like a match; the title does not.
     off_profile = matched_terms(title, criteria.exclude.off_profile_titles)
     if off_profile and not matched_terms(title, criteria.exclude.core_title_terms):
         reasons.append(f"titulo de otro perfil: {', '.join(off_profile)}")
@@ -133,11 +133,11 @@ def _seniority_points(offer: JobOffer) -> tuple[int, str]:
 
 
 def _competition_points(offer: JobOffer, criteria: Criteria) -> tuple[int, str]:
-    """Premia llegar pronto y castiga la cola.
+    """Rewards arriving early and penalises a long queue.
 
-    Va como modificador y no como bloque propio para no descuadrar el reparto
-    de los otros cuatro: la competencia no cambia si la oferta encaja contigo,
-    cambia tus opciones de que alguien la lea.
+    It is a modifier rather than a block of its own so the split across the
+    other four stays intact: competition does not change whether a posting
+    fits you, it changes the odds of anyone reading your application.
     """
     if offer.applicants is None:
         return 0, ""
@@ -151,7 +151,7 @@ def _competition_points(offer: JobOffer, criteria: Criteria) -> tuple[int, str]:
 
 
 def to_ten(points: int) -> int:
-    """Convierte los 100 puntos internos en la nota 1-10 que ves en Telegram."""
+    """Turns the 100 internal points into the 1-10 score you see in Telegram."""
     return max(1, min(10, round(points / 10)))
 
 
@@ -181,7 +181,7 @@ def score_offer(offer: JobOffer, criteria: Criteria, today: date | None = None) 
 
 
 def is_fresh(offer: JobOffer, criteria: Criteria, today: date | None = None) -> bool:
-    """Atajo para filtrar por antiguedad sin puntuar la oferta entera."""
+    """Shortcut to filter by age without scoring the whole posting."""
     if offer.posted_at is None:
         return True
     cutoff = (today or date.today()) - timedelta(days=criteria.search.max_age_days)

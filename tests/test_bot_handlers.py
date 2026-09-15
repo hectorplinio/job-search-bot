@@ -1,12 +1,13 @@
-"""Los handlers tienen que sobrevivir a updates incompletos.
+"""The handlers have to survive incomplete updates.
 
-Telegram no garantiza que un update traiga mensaje, ni que el mensaje de un
-boton siga siendo accesible: uno viejo llega como "inaccessible" y no admite
-respuesta. El codigo lo daba por hecho y un caso raro tumbaba el handler.
+Telegram guarantees neither that an update carries a message, nor that a
+button's message is still accessible: an old one arrives as "inaccessible"
+and takes no reply. The code assumed otherwise and one odd case took the
+handler down.
 
-Los dobles heredan de las clases de telegram a proposito: el codigo distingue
-un mensaje accesible con isinstance, asi que un doble suelto probaria otra
-cosa distinta de la que corre en produccion.
+The doubles subclass telegram's own classes on purpose: the code tells an
+accessible message apart with isinstance, so a loose double would test
+something other than what runs in production.
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ class ChatDePrueba(Chat):
 
 
 class MensajeDePrueba(Message):
-    """Un mensaje normal: se puede responder sobre el."""
+    """A normal message: you can reply on it."""
 
     async def reply_text(self, text: str, **kwargs: Any) -> Any:
         RESPUESTAS.append(text)
@@ -49,8 +50,8 @@ def mensaje(text: str = "") -> MensajeDePrueba:
 
 @dataclass
 class MensajeInaccesible:
-    """Lo que entrega Telegram cuando el mensaje del boton es viejo: trae el
-    chat, pero no se puede responder sobre el."""
+    """What Telegram delivers when the button's message is old: it carries
+    the chat, but you cannot reply on it."""
 
     chat: Any = None
 
@@ -100,7 +101,7 @@ def _limpiar() -> None:
 
 
 async def test_un_update_sin_mensaje_no_revienta() -> None:
-    """Un update sin mensaje acababa llamando a .reply_text sobre None."""
+    """An update with no message ended up calling .reply_text on None."""
     await bot_module.free_text(FakeUpdate(), FakeContext())
     assert RESPUESTAS == []
 
@@ -122,7 +123,7 @@ async def test_una_oferta_que_ya_no_esta_se_avisa_en_el_mensaje() -> None:
 
 
 async def test_si_el_mensaje_del_boton_es_inaccesible_responde_por_el_chat() -> None:
-    """El caso que rompia: reply_text sobre un mensaje que no lo tiene."""
+    """The case that broke: reply_text on a message that does not have it."""
     inaccesible = MensajeInaccesible(chat=ChatDePrueba(id=42, type=Chat.PRIVATE))
     update = FakeUpdate(callback_query=FakeQuery(message=inaccesible))
     context = FakeContext(FakeContainer(encontrado=None))

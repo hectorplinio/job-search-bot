@@ -1,9 +1,9 @@
 """Glassdoor.
 
-Es la fuente mas fragil de todas: los nombres de clase llevan un hash que
-cambia en cada despliegue suyo, asi que seleccionamos por atributos
-`data-test`, que si son estables. Si un dia dejan de servir HTML sin
-JavaScript, esta fuente devolvera cero ofertas y las demas seguiran andando.
+The most fragile source of the lot: their class names carry a hash that changes
+with every deploy of theirs, so we select on `data-test` attributes, which are
+stable. If they ever stop serving HTML without JavaScript, this source will
+return zero postings and the rest will keep running.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from .base import BaseSource, clean_text, detect_work_mode, parse_posted_at
 logger = logging.getLogger(__name__)
 
 BASE = "https://www.glassdoor.es"
-# Identificador interno de pais en las URLs de Glassdoor. 219 = España.
+# Glassdoor's internal country id in their URLs. 219 = Spain.
 DEFAULT_COUNTRY_ID = 219
 DEFAULT_LOCATION_SLUG = "espana"
 _JOB_ID = re.compile(r"jl=(\d+)")
@@ -38,10 +38,10 @@ class GlassdoorSource(BaseSource):
         return self._deduplicate(collected)[: criteria.search.max_results_per_query]
 
     def _build_url(self, query: str) -> str:
-        """Glassdoor codifica en la URL los offsets del pais y del puesto.
+        """Glassdoor encodes the country and role offsets in the URL.
 
-        'espana-python-empleos-SRCH_IL.0,6_IN219_KO7,13' significa: el pais
-        ocupa los caracteres 0-6 del slug y el puesto los 7-13.
+        'espana-python-empleos-SRCH_IL.0,6_IN219_KO7,13' means: the country
+        takes characters 0-6 of the slug and the role takes 7-13.
         """
         location = self.options.get("location_slug", DEFAULT_LOCATION_SLUG)
         country_id = self.options.get("country_id", DEFAULT_COUNTRY_ID)
@@ -59,9 +59,9 @@ class GlassdoorSource(BaseSource):
         try:
             html = await self.http.get_text(url, headers=self.auth_headers())
         except Exception as exc:  # noqa: BLE001
-            # El 403 es su antibot, no un error de codigo: corta por IP tras
-            # unas pocas peticiones. Con GLASSDOOR_COOKIE en .env deja de
-            # tratarte como visitante anonimo.
+            # A 403 is their antibot, not a bug: they block your IP after a few
+            # requests. With GLASSDOOR_COOKIE in .env they stop treating you
+            # as an anonymous visitor.
             hint = "" if self.has_session else " (prueba con GLASSDOOR_COOKIE en .env)"
             logger.warning("Glassdoor rechazo %r (%s)%s", query, str(exc)[:60], hint)
             return []
