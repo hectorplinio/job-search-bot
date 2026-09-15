@@ -1,6 +1,6 @@
-"""Tests de los parsers, con fixtures copiados de la estructura real de cada
-portal (septiembre 2026). Si un portal cambia el HTML, estos tests seguiran
-verdes pero la fuente devolvera cero: por eso `jobbot run` avisa por fuente.
+"""Parser tests, with fixtures copied from the real structure of each job
+board (September 2026). If a board changes its HTML these tests stay green but
+the source returns zero: that is why `jobbot run` warns per source.
 """
 
 from __future__ import annotations
@@ -160,7 +160,7 @@ async def test_linkedin_parsea_tarjeta_y_ficha(criteria) -> None:
         offer.url == "https://es.linkedin.com/jobs/view/backend-developer-python-at-acme-4439920031"
     )
     assert offer.work_mode is WorkMode.REMOTE
-    # La tarjeta no trae salario; la ficha si.
+    # The card carries no salary; the detail page does.
     assert offer.salary.minimum == 55_000
     assert "FastAPI" in offer.description
 
@@ -197,7 +197,7 @@ async def test_manfred_filtra_por_stack_y_enriquece(criteria) -> None:
     source = ManfredSource(http, {})
     offers = await source.search(criteria)
 
-    # La oferta de .NET no menciona ninguna tecnologia del perfil.
+    # The .NET posting mentions no technology from the profile.
     assert [offer.title for offer in offers] == ["Senior Python Engineer"]
     offer = offers[0]
     assert offer.work_mode is WorkMode.REMOTE
@@ -230,8 +230,8 @@ async def test_remoteok_ignora_el_aviso_legal(criteria) -> None:
 
 
 def test_alternar_reparte_el_cupo_entre_busquedas() -> None:
-    """Concatenar y cortar hacia que la primera busqueda se llevara todo el
-    cupo: asi es como se nos escapo una oferta que si estaba en LinkedIn."""
+    """Concatenating and truncating let the first search take the whole quota:
+    that is how a posting that was on LinkedIn got away from us."""
     from jobbot.adapters.sources.base import interleave
 
     primera = ["a1", "a2", "a3", "a4"]
@@ -241,7 +241,7 @@ def test_alternar_reparte_el_cupo_entre_busquedas() -> None:
     mezclado = interleave([primera, segunda, tercera])
 
     assert mezclado == ["a1", "b1", "c1", "a2", "b2", "a3", "a4"]
-    # Con un tope de 3, antes solo entraba la primera busqueda. Ahora entran las tres.
+    # With a cap of 3, only the first search used to get in. Now all three do.
     assert set(mezclado[:3]) == {"a1", "b1", "c1"}
 
 
@@ -254,8 +254,8 @@ def test_alternar_aguanta_listas_vacias() -> None:
 
 
 async def test_linkedin_pagina_hasta_agotar(criteria) -> None:
-    """El endpoint de invitado sirve 10 por peticion. Sin paginar, el bot solo
-    veia las diez primeras de cada busqueda."""
+    """The guest endpoint serves 10 per request. Without pagination the bot
+    only saw the first ten of each search."""
     pagina_llena = "".join(
         LINKEDIN_CARD.replace("4439920031", str(4439920000 + n)) for n in range(10)
     )
@@ -278,10 +278,75 @@ async def test_linkedin_pagina_hasta_agotar(criteria) -> None:
     criteria.search.locations = ["Spain"]
     offers = await LinkedInSource(http, {"pages": 3}).search(criteria)
 
-    # Pide la segunda pagina, y para al ver que viene incompleta.
+    # It asks for the second page, and stops when it comes back incomplete.
     assert http.starts[:2] == ["0", "10"]
     assert "20" not in http.starts
     assert len(offers) == 11
+
+
+async def test_linkedin_tiene_su_propio_tope(criteria) -> None:
+    """The shared cap of 40 threw away most of what LinkedIn has: measured, the
+    configured searches return over 400 unique postings. Its own cap lives in
+    the source options."""
+
+    class HttpLleno(FakeHttp):
+        def __init__(self) -> None:
+            super().__init__({})
+            self.fichas = 0
+
+        async def get_text(self, url: str, **kwargs) -> str:
+            if "seeMoreJobPostings" in url:
+                start = int((kwargs.get("params") or {}).get("start", 0))
+                return "".join(
+                    LINKEDIN_CARD.replace("4439920031", str(4439920000 + start + n))
+                    for n in range(10)
+                )
+            self.fichas += 1
+            return LINKEDIN_DETAIL
+
+    criteria.search.queries = ["python"]
+    criteria.search.locations = ["Spain"]
+    criteria.search.max_results_per_query = 50
+    criteria.search.max_results_per_source = 40
+
+    http = HttpLleno()
+    offers = await LinkedInSource(http, {"pages": 5, "max_results": 35}).search(criteria)
+    assert len(offers) == 35
+    # One request per description: that is what the cap is really limiting.
+    assert http.fichas == 35
+
+    # Without the override it falls back to the shared cap.
+    http = HttpLleno()
+    offers = await LinkedInSource(http, {"pages": 5}).search(criteria)
+    assert len(offers) == 40
+
+
+async def test_linkedin_descarta_por_titulo_antes_de_pedir_la_ficha(criteria) -> None:
+    """Every description is one extra request, so a title that is already
+    rejected must not cost one."""
+    tarjetas = LINKEDIN_CARD + LINKEDIN_CARD.replace("4439920031", "4439920099").replace(
+        "Backend Developer (Python)", "Junior Frontend Developer"
+    )
+
+    class HttpDos(FakeHttp):
+        def __init__(self) -> None:
+            super().__init__({})
+            self.fichas = 0
+
+        async def get_text(self, url: str, **kwargs) -> str:
+            if "seeMoreJobPostings" in url:
+                return tarjetas
+            self.fichas += 1
+            return LINKEDIN_DETAIL
+
+    criteria.search.queries = ["python"]
+    criteria.search.locations = ["Spain"]
+
+    http = HttpDos()
+    offers = await LinkedInSource(http, {"pages": 1}).search(criteria)
+
+    assert len(offers) == 1
+    assert http.fichas == 1
 
 
 REMOTIVE_PAYLOAD = {
@@ -366,8 +431,8 @@ async def test_himalayas_usa_la_lista_de_paises(criteria) -> None:
     offers = await HimalayasSource(FakeHttp(json_payload=HIMALAYAS_PAYLOAD), {}).search(criteria)
     empresas = [o.company for o in offers]
 
-    # Espana en la lista entra; lista vacia significa sin restriccion y tambien;
-    # solo Estados Unidos se queda fuera.
+    # Spain on the list gets in; an empty list means no restriction and also
+    # gets in; United States only stays out.
     assert empresas == ["Remote Co", "Sin Limites"]
     assert (offers[0].salary.minimum, offers[0].salary.maximum) == (80_000, 110_000)
 
@@ -376,7 +441,7 @@ def test_elegibilidad_por_pais() -> None:
     from jobbot.adapters.sources.base import can_work_from
 
     assert can_work_from("Worldwide") is True
-    assert can_work_from("") is True  # sin restriccion declarada
+    assert can_work_from("") is True  # no restriction declared
     assert can_work_from("Europe") is True
     assert can_work_from("LATAM, Europe, USA") is True
     assert can_work_from("Spain, Portugal") is True
@@ -393,5 +458,5 @@ def test_linkedin_lee_cuantos_han_solicitado() -> None:
     assert leer("hace 2 horas · 6 solicitudes") == 6
     assert leer("Over 150 applicants") == 150
     assert leer("1.200 solicitudes") == 1200
-    # Aproximadamente la mitad de las ofertas no lo publican.
+    # Roughly half the postings do not publish it.
     assert leer("Hace 3 dias. Jornada completa.") is None

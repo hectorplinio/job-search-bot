@@ -1,4 +1,4 @@
-"""Salida a Telegram: el mensaje que te llega al movil."""
+"""The way out to Telegram: the message that reaches your phone."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def _age(posted_at: date | None) -> str:
 
 
 def format_offer(scored: ScoredOffer) -> str:
-    """El cuerpo del mensaje. Aislado para poder testearlo sin red."""
+    """The body of the message. Isolated so it can be tested without a network."""
     offer = scored.offer
     icon = SCORE_ICONS.get(scored.score.value, "⚪")
 
@@ -55,7 +55,7 @@ def format_offer(scored: ScoredOffer) -> str:
     lines.append(f"📍 {' · '.join(place)}")
     lines.append(f"💰 {_escape(offer.salary.format())}")
     if offer.applicants is not None:
-        # Un "200+" al lado del titulo cambia la decision de aplicar o no.
+        # A "200+" next to the title changes whether you apply at all.
         cuantos = f"{offer.applicants}+" if offer.applicants >= 200 else str(offer.applicants)
         lines.append(f"👥 {cuantos} solicitudes")
 
@@ -73,7 +73,7 @@ def format_offer(scored: ScoredOffer) -> str:
 
 
 def _keyboard(scored: ScoredOffer) -> InlineKeyboardMarkup:
-    # callback_data tiene un limite de 64 bytes, asi que va la huella recortada.
+    # callback_data is capped at 64 bytes, so the fingerprint goes truncated.
     key = scored.fingerprint[:32]
     return InlineKeyboardMarkup(
         [
@@ -86,11 +86,11 @@ def _keyboard(scored: ScoredOffer) -> InlineKeyboardMarkup:
 
 
 class TelegramNotifier:
-    """Implementacion de Notifier sobre la Bot API.
+    """Notifier implemented on the Bot API.
 
-    Telegram limita a un mensaje por segundo y pico en un mismo chat. Mandar
-    treinta seguidos sin pausa hace que te descarte varios, y ademas llegan
-    todos de golpe y no hay quien los lea. De ahi el ritmo entre envios.
+    Telegram allows roughly one message per second in the same chat. Sending
+    thirty back to back means several get dropped, and they all land at once
+    so nobody can read them. Hence the pacing between sends.
     """
 
     def __init__(self, token: str, chat_id: str, *, delay_seconds: float = 1.2) -> None:
@@ -100,7 +100,7 @@ class TelegramNotifier:
         self._sent_something = False
 
     async def _pace(self) -> None:
-        """Espera antes de cada mensaje menos el primero."""
+        """Waits before every message except the first."""
         if self._sent_something and self._delay > 0:
             await asyncio.sleep(self._delay)
         self._sent_something = True
@@ -117,8 +117,8 @@ class TelegramNotifier:
                     reply_markup=reply_markup,
                 )
             except RetryAfter as exc:
-                # Telegram dice exactamente cuanto esperar. Hacerle caso es
-                # la diferencia entre recibir 40 ofertas o recibir 25.
+                # Telegram says exactly how long to wait. Obeying it is the
+                # difference between receiving 40 postings and receiving 25.
                 espera = float(getattr(exc, "retry_after", 5)) + 0.5
                 logger.warning("Telegram pide esperar %.1fs; reintento %s", espera, intento + 1)
                 await asyncio.sleep(espera)

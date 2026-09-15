@@ -12,8 +12,8 @@ from jobbot.settings import PROJECT_ROOT
 
 @pytest.fixture
 def criteria() -> Criteria:
-    """Los criterios reales del proyecto, no unos de mentira: si alguien rompe
-    config.yaml, los tests lo cantan."""
+    """The project's real criteria, not made-up ones: if anyone breaks
+    config.yaml, the tests say so."""
     return Criteria.load(PROJECT_ROOT / "config.yaml")
 
 
@@ -48,7 +48,7 @@ def offer() -> JobOffer:
 
 
 class FakeHttp:
-    """HttpClient de mentira: devuelve fixtures segun la URL pedida."""
+    """A fake HttpClient: it returns fixtures based on the requested URL."""
 
     def __init__(self, text_by_fragment: dict[str, str] | None = None, json_payload=None) -> None:
         self.text_by_fragment = text_by_fragment or {}

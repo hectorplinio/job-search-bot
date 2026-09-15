@@ -1,8 +1,8 @@
-"""Huella de una oferta, para no avisarte dos veces de lo mismo.
+"""A posting's fingerprint, so you are never alerted twice about the same job.
 
-La misma oferta aparece en LinkedIn, en InfoJobs y en la web de la empresa con
-titulos ligeramente distintos. La huella normaliza empresa + puesto para que
-las tres colapsen en una sola.
+The same job shows up on LinkedIn, on InfoJobs and on the company's own site
+with slightly different titles. The fingerprint normalises company + role so
+the three collapse into one.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import unicodedata
 
 from .models import JobOffer
 
-# Ruido que las empresas meten en el titulo y que no distingue una oferta de otra.
+# Noise companies put in titles that does not tell one posting from another.
 _TITLE_NOISE = (
     r"\((?:remote|remoto|híbrido|hibrido|presencial|h/m/x|m/f/d|f/m/d|m/w/d)\)",
     r"\b(?:100%\s*)?(?:remote|remoto|teletrabajo|híbrido|hibrido)\b",
@@ -23,9 +23,9 @@ _TITLE_NOISE = (
     r"[|·–—-]+\s*$",
 )
 
-# Se aplica ANTES de quitar la puntuacion: "S.L." tiene que seguir siendo una
-# sola pieza, o al limpiar los puntos se convierte en "s l" y ya no casa.
-# Las alternativas largas van primero (corp antes que co).
+# Applied BEFORE stripping punctuation: "S.L." has to stay one piece, or once
+# the dots are gone it becomes "s l" and no longer matches. Longer alternatives
+# come first (corp before co).
 _COMPANY_SUFFIXES = re.compile(
     r"\b(?:"
     r"s\.?\s?l\.?\s?u?|s\.?\s?a\.?\s?u?|"
@@ -57,18 +57,18 @@ def normalize_company(company: str) -> str:
     stripped = " ".join(re.sub(r"[^a-z0-9\s]", " ", stripped).split())
     if stripped:
         return stripped
-    # Una empresa que se llame literalmente "Tech" se quedaria sin nombre y
-    # colisionaria con cualquier otra del mismo puesto.
+    # A company literally called "Tech" would be left with no name at all and
+    # would collide with any other one hiring for the same role.
     return " ".join(re.sub(r"[^a-z0-9\s]", " ", text).split())
 
 
 def fingerprint(offer: JobOffer) -> str:
-    """Identidad estable de una oferta, independiente de la fuente."""
+    """A posting's stable identity, independent of the source."""
     key = f"{normalize_company(offer.company)}::{normalize_title(offer.title)}"
-    return hashlib.sha1(key.encode("utf-8")).hexdigest()  # noqa: S324 - no es criptografia
+    return hashlib.sha1(key.encode("utf-8")).hexdigest()  # noqa: S324 - not cryptography
 
 
 def url_key(url: str) -> str:
-    """Segunda huella, por URL canonica, para pillar reposts de la misma fuente."""
+    """A second fingerprint, by canonical URL, to catch reposts from one source."""
     canonical = re.sub(r"[?#].*$", "", url.strip().lower().rstrip("/"))
     return hashlib.sha1(canonical.encode("utf-8")).hexdigest()  # noqa: S324

@@ -1,8 +1,8 @@
-"""Los prompts salen del perfil, no de constantes.
+"""The prompts come from the profile, not from constants.
 
-Antes el prompt de redaccion nombraba AscendGate, Telefonica y Jobandtalent,
-asi que otra persona que clonase el repo recibia cartas sobre los trabajos de
-otro. Estos tests fijan que el bot es reutilizable.
+The writing prompt used to name AscendGate, Telefonica and Jobandtalent, so
+anyone else cloning the repo got letters about someone else's jobs. These
+tests pin down that the bot is reusable.
 """
 
 from __future__ import annotations

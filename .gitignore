@@ -12,17 +12,17 @@ build/
 dist/
 out/
 
-# Todo lo que hay en data/ es tuyo y privado: el historial, las cookies de
-# sesion y el perfil del navegador con tus cuentas abiertas. Se ignora la
-# carpeta entera salvo el .gitkeep, para que un fichero nuevo no se escape
-# por olvidar añadirlo aqui.
+# Everything in data/ is yours and private: the history, the session cookies
+# and the browser profile with your accounts signed in. The whole folder is
+# ignored except the .gitkeep, so a new file cannot escape because someone
+# forgot to add it here.
 data/*
 !data/.gitkeep
 
-# El CV lleva telefono y email. En un repo publico eso lo indexa Google y
-# acaba en listas de spam.
+# The CV carries a phone number and an email. In a public repo Google indexes
+# that and it ends up on spam lists.
 *.pdf
 *.docx
 
-# Preferencias locales del editor, no del proyecto.
+# Local editor preferences, not the project's.
 .claude/settings.local.json

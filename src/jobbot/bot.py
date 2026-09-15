@@ -1,7 +1,7 @@
-"""El bot de Telegram: comandos, botones y modo manual.
+"""The Telegram bot: commands, buttons and manual mode.
 
-Ejecuta `jobbot bot` y le puedes hablar. El cron (`jobbot run`) funciona sin
-esto; el bot es para pedirle cosas tu.
+Run `jobbot bot` and you can talk to it. The cron job (`jobbot run`) works
+without this; the bot is for asking it things yourself.
 """
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
-from telegram import Update
+from telegram import Message, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import (
     Application,
@@ -55,7 +55,7 @@ def _container(context: ContextTypes.DEFAULT_TYPE) -> Container:
 
 
 async def _reply_long(update: Update, text: str) -> None:
-    """Telegram corta a 4096 caracteres."""
+    """Telegram cuts messages off at 4096 characters."""
     message = update.effective_message
     if message is None:
         return
@@ -81,44 +81,46 @@ def _format_documents(offer: JobOffer, documents: ApplicationDocuments) -> tuple
 
 
 async def scheduled_search(context: ContextTypes.DEFAULT_TYPE) -> None:
-    """La busqueda periodica, dentro del propio proceso del bot.
+    """The scheduled search, inside the bot's own process.
 
-    No avisa cuando no encuentra nada: a cuatro pasadas al dia, un "sin
-    novedades" cada vez seria ruido. Las ofertas hablan por si solas.
+    It says nothing when it finds nothing: at four runs a day, a "nothing
+    new" every time would be noise. The postings speak for themselves.
     """
     container = context.application.bot_data["container"]
     try:
         report = await container.search_use_case().run()
-    except Exception:  # noqa: BLE001 - un fallo no puede matar el bot
+    except Exception:  # noqa: BLE001 - one failure must not kill the bot
         logger.exception("La busqueda programada fallo; se reintenta en el proximo turno")
         return
     logger.info("Busqueda programada: %s enviadas de %s revisadas", report.notified, report.fetched)
 
 
 async def next_run(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Cuando toca la siguiente busqueda automatica."""
+    """When the next automatic search is due."""
     queue = context.application.job_queue
     trabajos = queue.get_jobs_by_name(SEARCH_JOB) if queue is not None else []
 
     cuando = None
     if trabajos:
-        # next_t solo existe mientras el planificador corre; fuera de ahi
-        # levanta AttributeError en vez de devolver None.
+        # next_t only exists while the scheduler is running; outside it, it
+        # raises AttributeError instead of returning None.
         try:
             cuando = trabajos[0].next_t
         except AttributeError:
             cuando = None
 
+    message = update.effective_message
+    if message is None:
+        return
+
     if cuando is None:
-        await update.effective_message.reply_text(
+        await message.reply_text(
             "No hay busqueda automatica programada ahora mismo. Usa /buscar cuando quieras."
         )
         return
 
     local = cuando.astimezone()
-    await update.effective_message.reply_text(
-        f"Siguiente busqueda automatica: {local:%H:%M} del {local:%d/%m}."
-    )
+    await message.reply_text(f"Siguiente busqueda automatica: {local:%H:%M} del {local:%d/%m}.")
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -127,6 +129,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def search_now(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = update.effective_message
+    if message is None:
+        return
+
     await message.reply_text("🔎 Buscando. Esto tarda un par de minutos.")
     await message.chat.send_action(ChatAction.TYPING)
 
@@ -136,19 +141,17 @@ async def search_now(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def top_pending(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Las mejores pendientes, exactamente igual que una alerta.
+    """The best pending postings, exactly like an alert.
 
-    Van por el notificador y no por reply_text: es el unico sitio que engancha
-    los botones de Cover letter y Summary. Mandarlas por otra via las dejaba
-    sin ellos.
+    They go through the notifier rather than reply_text: that is the only
+    place that wires up the Cover letter and Summary buttons. Sending them any
+    other way left them without those.
     """
     container = _container(context)
     umbral = container.criteria.scoring.notify_threshold
     pending = container.repository.top_pending(limit=5, min_score=umbral)
     if not pending:
-        await update.effective_message.reply_text(
-            f"No hay ofertas pendientes con nota {umbral} o mas."
-        )
+        await _reply_long(update, f"No hay ofertas pendientes con nota {umbral} o mas.")
         return
 
     notifier = container.notifier()
@@ -158,7 +161,7 @@ async def top_pending(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 
 async def usage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Lo que llevas gastado en Claude, contado por el propio bot."""
+    """What you have spent on Claude so far, counted by the bot itself."""
     log = _container(context).usage
     resumen = log.summary()
 
@@ -206,6 +209,9 @@ async def _documents_for(
     want_summary: bool,
 ) -> None:
     message = update.effective_message
+    if message is None:
+        return
+
     if not raw.strip():
         await message.reply_text("Pasame el enlace de la oferta o pega su texto.")
         return
@@ -219,7 +225,7 @@ async def _documents_for(
             f"{exc}\n\nSi el portal pide login, copia el texto de la oferta y pegamelo."
         )
         return
-    except Exception:  # noqa: BLE001 - el bot no puede morirse por una oferta rara
+    except Exception:  # noqa: BLE001 - the bot must not die over one odd posting
         logger.exception("Fallo generando documentos")
         await message.reply_text("Algo ha fallado generando los documentos. Mira los logs.")
         return
@@ -247,10 +253,14 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def free_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Un enlace suelto, o el texto de una oferta, dispara el modo manual."""
-    text = update.effective_message.text or ""
+    """A bare link, or the text of a posting, triggers manual mode."""
+    message = update.effective_message
+    if message is None:
+        return
+
+    text = message.text or ""
     if extract_url(text) is None and len(text) < 200:
-        await update.effective_message.reply_text(
+        await message.reply_text(
             "Mandame el enlace de una oferta, o pega su texto. /ayuda para lo demas."
         )
         return
@@ -258,29 +268,44 @@ async def free_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Botones 'Cover letter' y 'Summary' de las alertas."""
+    """The 'Cover letter' and 'Summary' buttons on the alerts."""
     query = update.callback_query
+    if query is None:
+        return
     await query.answer()
+
+    # Telegram delivers the button's message as "inaccessible" when it is very
+    # old or the bot can no longer read it. You cannot reply on it then, so the
+    # answer goes through the chat instead.
+    message = query.message if isinstance(query.message, Message) else None
+    chat_id = query.message.chat.id if query.message is not None else None
+
+    async def responder(text: str, **kwargs) -> None:
+        if message is not None:
+            await message.reply_text(text, **kwargs)
+        elif chat_id is not None:
+            await context.bot.send_message(chat_id=chat_id, text=text, **kwargs)
 
     action, _, prefix = (query.data or "").partition(":")
     container = _container(context)
     stored = container.repository.find_by_fingerprint_prefix(prefix)
     if stored is None:
-        await query.message.reply_text("Esa oferta ya no esta en el historial.")
+        await responder("Esa oferta ya no esta en el historial.")
         return
 
-    await query.message.chat.send_action(ChatAction.TYPING)
+    if message is not None:
+        await message.chat.send_action(ChatAction.TYPING)
     try:
         documents = await container.write_use_case().from_offer(stored.offer)
     except Exception:  # noqa: BLE001
         logger.exception("Fallo generando documentos desde un boton")
-        await query.message.reply_text("No he podido generar los documentos.")
+        await responder("No he podido generar los documentos.")
         return
 
     cover, summary = _format_documents(stored.offer, documents)
     body = cover if action == "cover" else summary
     for start in range(0, len(body), TELEGRAM_LIMIT):
-        await query.message.reply_text(
+        await responder(
             body[start : start + TELEGRAM_LIMIT],
             parse_mode=ParseMode.HTML,
             disable_web_page_preview=True,
@@ -324,8 +349,8 @@ def build_application(settings: Settings | None = None) -> Application:
         Application.builder().token(token).post_init(post_init).post_shutdown(post_shutdown).build()
     )
 
-    # Solo tu chat. Sin esto, cualquiera que encuentre el bot gasta tu cuota
-    # de Anthropic generando cartas.
+    # Your chat only. Without this, anyone who finds the bot burns your
+    # Anthropic quota generating letters.
     only_me = filters.Chat(chat_id=int(chat_id))
 
     application.add_handler(CommandHandler(["start", "ayuda", "help"], start, filters=only_me))

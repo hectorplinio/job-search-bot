@@ -1,8 +1,8 @@
 """InfoJobs.
 
-La pagina de resultados llega renderizada desde servidor, con clases
-`ij-OfferCardContent-*` estables y un span dedicado al salario cuando la
-empresa lo publica. No hace falta la API oficial (que ya no dan de alta).
+The results page arrives server-rendered, with stable `ij-OfferCardContent-*`
+classes and a dedicated span for the salary when the company publishes it. The
+official API is not needed (and they no longer hand out access anyway).
 """
 
 from __future__ import annotations
@@ -48,8 +48,9 @@ class InfoJobsSource(BaseSource):
                 offers.append(offer)
 
         if not offers:
-            # InfoJobs no da 403: sirve una pagina corta sin tarjetas. Sin ese
-            # aviso parece que simplemente no hay ofertas de lo que buscas.
+            # InfoJobs does not return 403: it serves a short page with no
+            # cards. Without this warning it just looks like there are no
+            # postings for what you searched.
             logger.info(
                 "InfoJobs no devolvio tarjetas para %r (%s bytes). "
                 "Suele ser limitacion por IP; con INFOJOBS_COOKIE en .env va mejor.",
@@ -78,7 +79,7 @@ class InfoJobsSource(BaseSource):
             for item in card.select("li.ij-OfferCardContent-description-list-item")
         ]
         meta = " | ".join(item for item in items if item)
-        # El primer item es la provincia; el segundo suele ser la modalidad.
+        # The first item is the province; the second is usually the work mode.
         location = items[0] if items else None
         snippet = clean_text(snippet_tag.get_text(" ")) if snippet_tag else ""
         salary_text = clean_text(salary_tag.get_text(" ")) if salary_tag else ""

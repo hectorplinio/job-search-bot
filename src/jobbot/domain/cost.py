@@ -1,15 +1,15 @@
-"""Cuanto cuesta cada llamada a Claude.
+"""What each call to Claude costs.
 
-El calculo vive en el dominio y no en el adaptador porque es aritmetica pura
-y conviene poder probarla sin tocar la API. Los precios son los publicos de
-Anthropic, en dolares por millon de tokens.
+The maths lives in the domain rather than the adapter because it is pure
+arithmetic and worth testing without touching the API. Prices are Anthropic's
+public ones, in dollars per million tokens.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Lectura de cache: 0,1x el precio de entrada. Escritura: 1,25x.
+# Cache reads: 0.1x the input price. Cache writes: 1.25x.
 CACHE_READ_FACTOR = 0.1
 CACHE_WRITE_FACTOR = 1.25
 
@@ -26,8 +26,8 @@ PRICES: dict[str, Price] = {
     "claude-haiku-4-5": Price(1.0, 5.0),
 }
 
-# Si algun dia se cambia de modelo y no esta en la tabla, se tira del mas caro
-# antes que subestimar la factura.
+# If the model is ever switched for one missing from the table, fall back to
+# the most expensive rather than underestimate the bill.
 FALLBACK = PRICES["claude-opus-5"]
 
 
@@ -50,7 +50,7 @@ class TokenUsage:
 
 
 def cost_usd(usage: TokenUsage) -> float:
-    """Coste en dolares de una llamada."""
+    """The dollar cost of one call."""
     price = PRICES.get(usage.model, FALLBACK)
     entrada = price.input_per_million / 1_000_000
     salida = price.output_per_million / 1_000_000
@@ -64,7 +64,7 @@ def cost_usd(usage: TokenUsage) -> float:
 
 
 def format_cost(amount: float) -> str:
-    """Un gasto de centimos no se lee bien con dos decimales."""
+    """Spending measured in cents does not read well with two decimals."""
     if amount == 0:
         return "0 $"
     if amount < 0.01:

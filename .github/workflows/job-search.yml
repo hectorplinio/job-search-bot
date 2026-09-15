@@ -1,18 +1,18 @@
-name: Buscar ofertas
+name: Search for jobs
 
-# El cron esta desactivado a proposito. Dos de las fuentes dependen de la
-# maquina del usuario: Otta necesita el perfil de navegador con su sesion, que
-# no sobrevive entre ejecuciones de un runner, e InfoJobs corta las IPs de
-# centro de datos. Ademas, sin secretos configurados cada disparo falla y
-# llena el correo de avisos.
+# The cron is disabled on purpose. Two of the sources depend on the user's own
+# machine: Otta needs the browser profile holding its session, which does not
+# survive between runner executions, and InfoJobs blocks data-centre IPs. On
+# top of that, with no secrets configured every trigger fails and fills your
+# inbox with alerts.
 #
-# La ejecucion periodica va en local con el Programador de tareas de Windows.
-# Aqui queda el disparo manual, util para probar el scraping sin sesion.
+# The bot schedules its own searches while it is running. What is left here is
+# the manual trigger, useful for testing the scraping without a session.
 on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "No mandar nada a Telegram"
+        description: "Send nothing to Telegram"
         type: boolean
         default: false
 
@@ -26,29 +26,29 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
 
-      # -e . instala el paquete y deja disponible el comando `jobbot`.
+      # -e . installs the package and makes the `jobbot` command available.
       - run: pip install -e .
 
-      # El historial vive en la cache del runner: sin esto, cada ejecucion
-      # empezaria en blanco y te mandaria las mismas ofertas otra vez.
-      # `restore-keys` recupera la cache mas reciente aunque la clave exacta
-      # (con el run number) no exista todavia.
-      - name: Recuperar historial
-        uses: actions/cache/restore@v4
+      # The history lives in the runner cache: without this, every run would
+      # start blank and send you the same postings again. `restore-keys`
+      # recovers the most recent cache even when the exact key (with the run
+      # number) does not exist yet.
+      - name: Restore history
+        uses: actions/cache/restore@v6
         with:
           path: data
           key: jobbot-history-${{ github.run_number }}
           restore-keys: |
             jobbot-history-
 
-      - name: Buscar
+      - name: Search
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -57,9 +57,9 @@ jobs:
         run: |
           jobbot run ${{ inputs.dry_run && '--dry-run' || '' }}
 
-      - name: Guardar historial
+      - name: Save history
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: data
           key: jobbot-history-${{ github.run_number }}
