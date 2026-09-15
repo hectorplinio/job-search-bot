@@ -43,20 +43,31 @@ def matched_terms(text: str, terms: list[str]) -> list[str]:
     return [term for term in terms if contains_term(text, term)]
 
 
-def _blockers(offer: JobOffer, criteria: Criteria, today: date) -> list[str]:
-    text = offer.searchable_text
-    title = offer.title.lower()
+def title_blockers(title: str, criteria: Criteria) -> list[str]:
+    """What the title alone is enough to reject a posting for.
+
+    Split out because a source may want to drop a posting before paying for
+    its detail page: on LinkedIn every description is one extra request.
+    """
+    lowered = title.lower()
     reasons: list[str] = []
 
-    bad_titles = matched_terms(title, criteria.exclude.titles)
+    bad_titles = matched_terms(lowered, criteria.exclude.titles)
     if bad_titles:
         reasons.append(f"titulo excluido: {', '.join(bad_titles)}")
 
     # The title decides. A long description name-drops half an ecosystem and
     # every posting ends up looking like a match; the title does not.
-    off_profile = matched_terms(title, criteria.exclude.off_profile_titles)
-    if off_profile and not matched_terms(title, criteria.exclude.core_title_terms):
+    off_profile = matched_terms(lowered, criteria.exclude.off_profile_titles)
+    if off_profile and not matched_terms(lowered, criteria.exclude.core_title_terms):
         reasons.append(f"titulo de otro perfil: {', '.join(off_profile)}")
+
+    return reasons
+
+
+def _blockers(offer: JobOffer, criteria: Criteria, today: date) -> list[str]:
+    text = offer.searchable_text
+    reasons: list[str] = title_blockers(offer.title, criteria)
 
     bad_text = [phrase for phrase in criteria.exclude.description if phrase.lower() in text]
     if bad_text:
