@@ -19,7 +19,10 @@ updates:
       day: monday
       time: "07:00"
       timezone: Europe/Madrid
-    open-pull-requests-limit: 5
+    # The limit counts every open Dependabot PR, and while it is reached
+    # nothing new is created, grouped pull requests included. With six stale
+    # ones left over from before the grouping worked, there was no room.
+    open-pull-requests-limit: 10
     commit-message:
       prefix: deps
       prefix-development: deps-dev
