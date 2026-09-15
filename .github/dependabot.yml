@@ -8,6 +8,12 @@ version: 2
 updates:
   - package-ecosystem: pip
     directory: "/"
+    # Without this, Dependabot widens the range instead of raising it: the PRs
+    # read "update the requirements to permit the latest version", which is not
+    # a version update, so it assigns them no major/minor/patch type and the
+    # group below never matches. With `increase` they become real version
+    # bumps and the grouping works.
+    versioning-strategy: increase
     schedule:
       interval: weekly
       day: monday
