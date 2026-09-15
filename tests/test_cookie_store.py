@@ -19,7 +19,7 @@ def test_una_cookie_caducada_no_se_usa(tmp_path) -> None:
     store.save("glassdoor", "sid=viejo", datetime.now(UTC) - timedelta(days=1))
     store.save("infojobs", "sid=nuevo", datetime.now(UTC) + timedelta(days=10))
 
-    # load() las devuelve todas para poder informar; usable() solo las vivas.
+    # load() returns them all so they can be reported; usable() only live ones.
     assert set(store.load()) == {"glassdoor", "infojobs"}
     assert store.usable() == {"infojobs": "sid=nuevo"}
 
@@ -41,7 +41,7 @@ def test_renovar_reemplaza_el_valor(tmp_path) -> None:
 
 
 def test_describe_nunca_filtra_la_cookie(tmp_path) -> None:
-    """describe() se imprime por pantalla en `jobbot cookies`."""
+    """describe() is what `jobbot cookies` prints to the screen."""
     store = CookieStore(tmp_path / "cookies.json")
     cookie = store.save("infojobs", "sid=secretisimo", datetime.now(UTC) + timedelta(days=5))
 

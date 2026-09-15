@@ -1,8 +1,8 @@
-"""El sueldo real vive en .env, no en config.yaml.
+"""The real salary lives in .env, not in config.yaml.
 
-config.yaml se publica en el repo, asi que sus cifras son un ejemplo. Estos
-tests fijan que .env manda, que un valor vacio no pisa nada y que un valor mal
-escrito no tumba el bot.
+config.yaml is published in the repo, so its figures are an example. These
+tests pin down that .env wins, that an empty value overrides nothing, and that
+a malformed value does not take the bot down.
 """
 
 from __future__ import annotations
@@ -52,8 +52,8 @@ def test_se_puede_pisar_solo_una_de_las_dos(tmp_path) -> None:
 
 
 def test_recargar_la_config_no_pierde_lo_del_entorno(tmp_path) -> None:
-    """El bot relee config.yaml en cada busqueda; si eso borrase el valor de
-    .env, el sueldo volveria al de ejemplo sin que nadie se enterase."""
+    """The bot re-reads config.yaml on every search; if that wiped the value
+    from .env, the salary would silently fall back to the example one."""
     settings = _settings(tmp_path, salary_minimum=35000)
     container = Container(settings)
     settings.config_path.write_text(

@@ -1,8 +1,8 @@
-"""We Work Remotely, via sus feeds RSS publicos.
+"""We Work Remotely, through its public RSS feeds.
 
-Es la fuente mas barata de mantener: RSS estable, sin antibot y sin clave. El
-titulo viene como "Empresa: Puesto" y el salario, cuando existe, va dentro de
-la descripcion.
+The cheapest source to maintain: stable RSS, no antibot and no key. The title
+comes as "Company: Role" and the salary, when there is one, lives inside the
+description.
 """
 
 from __future__ import annotations
@@ -66,7 +66,7 @@ class WeWorkRemotelySource(BaseSource):
 
         link = clean_text(link_tag.get_text())
         raw_title = clean_text(title_tag.get_text())
-        # WWR titula "Empresa: Puesto".
+        # WWR titles them "Company: Role".
         company, _, title = raw_title.partition(":")
         if not title:
             company, title = "", raw_title

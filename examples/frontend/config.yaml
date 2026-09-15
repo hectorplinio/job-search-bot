@@ -1,5 +1,5 @@
-# Criterios de ejemplo para un perfil de frontend. Demuestra que todo lo que
-# define "que es una buena oferta" vive en este fichero y en profile/cv.yaml.
+# Example criteria for a frontend profile. It shows that everything defining
+# "what counts as a good posting" lives in this file and in profile/cv.yaml.
 #
 #   JOBBOT_CONFIG_PATH=examples/frontend/config.yaml
 #   JOBBOT_PROFILE_PATH=examples/frontend/cv.yaml
@@ -7,56 +7,62 @@
 #
 
 search:
-  # Cada query se lanza contra cada fuente que la soporte.
+  # Each query is fired at every source that supports one.
   queries:
     - "frontend engineer react"
     - "react developer"
     - "typescript frontend"
     - "next.js developer"
     - "design system engineer"
-  # Solo aplica a las fuentes con filtro geografico (LinkedIn, Glassdoor).
+  # Only applies to sources with a geographic filter (LinkedIn, Glassdoor).
   locations:
     - "Spain"
     - "European Union"
-  # Tope por busqueda individual.
+  # Cap per individual search.
   max_results_per_query: 25
-  # Tope de la fuente entera, sumando todas sus busquedas. Antes solo existia
-  # el de arriba y se aplicaba tambien como total, asi que la primera busqueda
-  # agotaba el cupo y las demas no aportaban nada.
+  # Cap for the whole source, across all its searches. Only the one above used
+  # to exist and it doubled as the total, so the first search used up the quota
+  # and the rest contributed nothing.
   max_results_per_source: 40
-  # Ignora ofertas publicadas hace mas de N dias (si la fuente da la fecha).
+  # Ignores postings published more than N days ago (when the source gives a date).
   max_age_days: 21
-  # Ventana propia por fuente. En la bolsa de una empresa un anuncio de dos
-  # meses sigue vacante, porque los cubiertos se retiran; pero sin tope se
-  # colaban reqs fantasma de un ano entero.
+  # A per-source window. On a company's own board a two-month-old listing is
+  # still open, because filled roles are taken down; but with no cap, year-old
+  # ghost reqs slipped through.
   max_age_days_by_source:
     companies: 90
 
 salary:
   currency: EUR
-  # Por debajo de esto se descarta la oferta.
-  minimum: 40000
-  # A partir de aqui la oferta puntua al maximo en el bloque de salario.
-  target: 50000
-  # Muchas ofertas no publican salario. Si es false, se descartan todas
-  # las que no lo indiquen (te quedaras con muy pocas).
+  # These two figures are an example. This file is published in the repo, and
+  # your negotiating numbers should not be there: put them in .env as
+  # JOBBOT_SALARY_MINIMUM and JOBBOT_SALARY_TARGET, which override these.
+  #
+  # The minimum is compared against the TOP of the band: a posting of
+  # "35.000 - 53.000" still gets in, because it may pay above. Only the ones
+  # that fall short even at their best are dropped.
+  minimum: 30000
+  # From here up, a posting scores full marks in the salary block.
+  target: 45000
+  # Many postings publish no salary. If false, every posting without one is
+  # rejected (you will be left with very few).
   accept_unknown: true
 
 work_mode:
-  # Hibrido fuera: vives lejos de una capital y no te compensa desplazarte.
-  # "unknown" se queda porque muchas ofertas buenas no declaran modalidad;
-  # si te llega demasiada morralla de ese tipo, quitalo tambien.
+  # Hybrid is out: you live far from a big city and commuting is not worth it.
+  # "unknown" stays because many good postings do not declare a work mode; if
+  # too much junk comes in that way, drop it too.
   accepted: [remote, unknown]
   rejected: [hybrid, onsite]
 
 keywords:
-  # La oferta necesita al menos uno de estos para considerarse del perfil.
+  # A posting needs at least one of these to count as being in your field.
   required_any:
     - react
     - typescript
     - javascript
     - frontend
-  # Peso de cada tecnologia en el scoring (0-10).
+  # Weight of each technology in the scoring (0-10).
   weighted:
     react: 10
     typescript: 9
@@ -80,7 +86,7 @@ keywords:
     node.js: 4
 
 exclude:
-  # Si el titulo contiene cualquiera de estos, se descarta.
+  # If the title contains any of these, the posting is dropped.
   titles:
     - junior
     - jr.
@@ -92,9 +98,9 @@ exclude:
     - trainee
     - apprentice
     - "student"
-    # Programas de graduados y becarios: piden titulo universitario
-    # reciente y empiezan dentro de un ano. Se colaban porque el titulo
-    # dice "Software Engineer (Python)" y la trampa esta en el prefijo.
+    # Graduate and internship programmes: they ask for a recent university
+    # degree and start a year later. They slipped through because the title
+    # reads "Software Engineer (Python)" and the catch is in the prefix.
     - "graduate programme"
     - "graduate program"
     - "graduate scheme"
@@ -103,15 +109,15 @@ exclude:
     - "internship programme"
     - "internship program"
     - "working student"
-  # Si el cuerpo de la oferta contiene esto, se descarta.
+  # If the body of the posting contains this, it is dropped.
   description:
     - "100% presencial"
     - "totalmente presencial"
     - "trabajo presencial obligatorio"
     - "no se admite teletrabajo"
     - "sin teletrabajo"
-    # Remoto, si, pero solo dentro de EEUU. No puedes aceptarlas desde Espana,
-    # asi que mejor no gastar ni una llamada al LLM en ellas.
+    # Remote, yes, but only inside the US. You cannot take these from Spain, so
+    # better not to spend a single LLM call on them.
     - "usa only"
     - "us only"
     - "united states only"
@@ -121,10 +127,11 @@ exclude:
     - "authorized to work in the united states"
     - "us work authorization"
     - "must be located in the us"
-  # Roles y stacks de otro perfil. Descartan solo si el TITULO no nombra
-  # tambien algo de core_title_terms. Sin esto se cuelan cosas como
-  # "Senior .NET Full-stack Developer" o "Senior React Native Developer",
-  # que puntuaban alto porque la descripcion listaba medio ecosistema.
+  # Roles and stacks from another field. They only drop a posting when the
+  # TITLE does not also name something from core_title_terms. Without this,
+  # things like "Senior .NET Full-stack Developer" or "Senior React Native
+  # Developer" slip in, scoring high because the description listed half an
+  # ecosystem.
   off_profile_titles:
     - backend
     - back-end
@@ -147,8 +154,8 @@ exclude:
     - c#
     - android
     - ios
-  # Lo que rescata un titulo de la lista de arriba. A proposito NO incluye
-  # "full stack": un ".NET Full-stack" sigue siendo una oferta de .NET.
+  # What rescues a title from the list above. It deliberately does NOT include
+  # "full stack": a ".NET Full-stack" is still a .NET job.
   core_title_terms:
     - react
     - frontend
@@ -156,13 +163,13 @@ exclude:
     - typescript
     - javascript
     - "ui engineer"
-  # Tecnologias veto: descartan solo si la oferta NO trae stack moderno
-  # (Python o Node/TypeScript). Un puesto "PHP + Python" sobrevive.
-  # Tope de solicitantes. Solo LinkedIn publica el dato, asi que dejarlo
-  # vacio es lo razonable: un tope castigaria a las fuentes que no lo dan.
-  # Ponle un numero (30, por ejemplo) si quieres el equivalente al filtro
-  # de "menos de 10 solicitantes" de LinkedIn.
+  # Applicant cap. Only LinkedIn publishes the number, so leaving it empty is
+  # the sensible choice: a cap would penalise the sources that do not report
+  # it. Put a number here (30, say) if you want the equivalent of LinkedIn's
+  # "fewer than 10 applicants" filter.
   max_applicants: null
+  # Veto technologies: they only drop a posting when it does NOT carry a modern
+  # stack (Python or Node/TypeScript). A "PHP + Python" role survives.
   soft_veto_stack:
     - angularjs
     - jquery
@@ -171,20 +178,20 @@ exclude:
     - sharepoint
 
 scoring:
-  # Nota minima (1-10) para que el bot te mande la oferta.
+  # Minimum score (1-10) for the bot to send you a posting.
   notify_threshold: 6
-  # Reevaluar con Claude las ofertas que superen el umbral de reglas.
-  # Cuesta dinero (unos centimos por ejecucion), pero mejora mucho la nota
-  # y escribe el "por que encaja" que ves en Telegram.
+  # Re-score with Claude the postings that clear the rule-based threshold.
+  # It costs money (a few cents per run), but it improves the score a lot and
+  # writes the "why it fits" line you see in Telegram.
   use_llm: true
-  # Solo se manda a Claude lo que ya paso el filtro de reglas y saco >= esto.
+  # Only what already passed the rule filter and scored >= this goes to Claude.
   llm_min_rule_score: 5
-  # Cuantas ofertas como maximo evalua Claude en cada ejecucion. Van en
-  # lotes de 6 por llamada, asi que 40 ofertas son 7 llamadas, no 40.
+  # How many postings Claude scores at most per run. They go in batches of 6
+  # per call, so 40 postings are 7 calls, not 40.
   llm_max_offers_per_run: 40
-  # LinkedIn publica en la ficha cuanta gente ha solicitado ya. Llegar de los
-  # primeros es de lo que mas mueve la probabilidad de que te lean, asi que
-  # suma; una cola de 200 resta.
+  # LinkedIn publishes on the posting how many people have already applied.
+  # Being among the first is what moves the odds of being read the most, so it
+  # adds; a queue of 200 subtracts.
   competition:
     few_applicants: 25
     many_applicants: 150
@@ -193,17 +200,17 @@ scoring:
 
 sources:
   companies:
-    # La fuente mas util: las bolsas de empleo propias de las empresas, leidas
-    # directamente de su Greenhouse o su Ashby. La oferta aparece aqui antes
-    # que en ningun agregador, y trae la ubicacion real, asi que se ve cual es
-    # la version espanola de un puesto que publican por paises.
+    # The most useful source: the companies' own job boards, read straight from
+    # their Greenhouse or their Ashby. The posting shows up here before it does
+    # on any aggregator, and it carries the real location, so you can tell
+    # which is the Spanish version of a role published per country.
     #
-    # Para anadir una empresa, mira la URL de su pagina de empleo:
-    #   job-boards.greenhouse.io/EMPRESA  ->  ats: greenhouse
-    #   jobs.ashbyhq.com/EMPRESA          ->  ats: ashby
+    # To add a company, look at the URL of its careers page:
+    #   job-boards.greenhouse.io/COMPANY  ->  ats: greenhouse
+    #   jobs.ashbyhq.com/COMPANY          ->  ats: ashby
     enabled: true
     watchlist:
-      # Comprobadas: las tres publican puestos para Espana.
+      # Checked: all three publish roles for Spain.
       - { name: "Grafana Labs", ats: greenhouse, slug: grafanalabs }
       - { name: "Affirm",       ats: greenhouse, slug: affirm }
       - { name: "Monzo",        ats: greenhouse, slug: monzo }
@@ -211,78 +218,79 @@ sources:
     enabled: true
   linkedin:
     enabled: true
-    # 2 = remoto, 3 = hibrido, 1 = presencial
+    # 2 = remote, 3 = hybrid, 1 = on-site
     workplace_types: ["2", "3"]
-    # Solo "Solicitud sencilla", el equivalente al filtro de LinkedIn.
-    # Se aplica sin salir de LinkedIn, pero deja fuera muchas ofertas
-    # buenas que usan su propio ATS. Por eso va apagado.
+    # "Easy Apply" only, the equivalent of LinkedIn's own filter. You apply
+    # without leaving LinkedIn, but it leaves out many good postings that use
+    # their own ATS. That is why it is off.
     easy_apply_only: false
   tecnoempleo:
     enabled: true
-    # solo teletrabajo total o parcial
+    # full or partial remote work only
     telework_only: true
-    # Su buscador es por tecnologia, no por frase: dos terminos cubren mas
-    # que seis frases largas, y le pegamos menos.
+    # Their search is by technology, not by phrase: two terms cover more than
+    # six long phrases, and we hit them less.
     queries: ["react", "javascript", "typescript"]
   infojobs:
     enabled: true
-    # InfoJobs corta por IP si le encadenas muchas busquedas seguidas.
-    # Con dos consultas amplias aguanta.
+    # InfoJobs blocks your IP if you chain too many searches in a row.
+    # With two broad queries it holds up.
     queries: ["react", "frontend"]
   glassdoor:
-    # Apagada de salida: sin sesion responde 403 a las pocas peticiones.
-    # Pon GLASSDOOR_COOKIE en .env, ejecuta `jobbot check-sources` y, si
-    # devuelve ofertas, cambia esto a true.
+    # Off out of the box: without a session it answers 403 after a few
+    # requests. Put GLASSDOOR_COOKIE in .env, run `jobbot check-sources` and,
+    # if it returns postings, switch this to true.
     enabled: false
   remoteok:
     enabled: true
   remotive:
-    # Apagada despues de medirla. Su feed gratuito son 16 ofertas en total, y
-    # las unicas que pasan el filtro son todas de Lemon.io, que ademas ya
-    # aparece por We Work Remotely. Encima cobran por aplicar desde su web.
-    # Coste de mantenerla encendida: una peticion. Valor: cero.
+    # Switched off after measuring it. Its free feed is 16 postings in total,
+    # and the only ones that pass the filter are all from Lemon.io, which
+    # already shows up through We Work Remotely. On top of that they charge to
+    # apply from their site. Cost of leaving it on: one request. Value: zero.
     enabled: false
   himalayas:
-    # Igual que Remotive, pero su restriccion de paises es una lista
-    # explicita: el dato mas fiable para saber si puedes aplicar.
+    # Like Remotive, but its country restriction is an explicit list: the most
+    # reliable field for knowing whether you can apply.
     enabled: true
-    # 20 ofertas por pagina. Su catalogo pasa de 100.000, pero nueve de cada
-    # diez son solo para Estados Unidos y se descartan al vuelo, asi que
-    # hace falta leer bastantes paginas para sacar unas pocas aptas.
+    # 20 postings per page. Its catalogue is over 100,000, but nine out of ten
+    # are United States only and get dropped on the fly, so you have to read a
+    # fair few pages to get a handful of eligible ones.
     pages: 15
   weworkremotely:
     enabled: true
   otta:
-    # Otta migro a Welcome to the Jungle. Esta detras de AWS WAF con reto de
-    # JavaScript y su listado esta ademas detras del alta de cuenta, asi que
-    # copiar una cookie no vale: hay que ir con navegador.
+    # Otta moved to Welcome to the Jungle. It sits behind AWS WAF with a
+    # JavaScript challenge and its listing is also behind a sign-up, so copying
+    # a cookie is no use: you have to go with a browser.
     #
-    # Sesion iniciada el 11/09/2026 con `jobbot login otta`, valida un ano.
-    # Si algun dia deja de devolver ofertas, vuelve a ejecutar ese comando.
+    # Session started on 11/09/2026 with `jobbot login otta`, valid for a year.
+    # If it ever stops returning postings, run that command again.
     enabled: true
-    # Otta no busca por texto: te ensena los "matches" que calcula a partir de
-    # tus preferencias en su web, de una en una. Por eso aqui no hay queries.
-    # Si las ofertas no encajan, el sitio donde se arregla es tu perfil de Otta.
+    # Otta does not search by text: it shows you the "matches" it computes from
+    # your preferences on their site, one at a time. That is why there are no
+    # queries here. If the postings do not fit, the place to fix that is your
+    # Otta profile.
     #
-    # Cuantas recorrer por ejecucion. Cada una son unos 4 segundos de
-    # navegador, asi que 20 salen por minuto y medio.
+    # How many to walk per run. Each one is about 4 seconds of browser, so 20
+    # take a minute and a half.
     max_jobs: 20
 
 schedule:
-  # El propio bot lanza la busqueda cada X horas mientras esta escuchando.
-  # Asi no hace falta tarea programada ni cron: un unico proceso, y los
-  # botones de las alertas funcionan siempre porque el bot esta vivo.
+  # The bot itself launches a search every X hours while it is listening. That
+  # way no scheduled task and no cron are needed: a single process, and the
+  # buttons on the alerts always work because the bot is alive.
   enabled: true
   every_hours: 4
-  # Margen antes de la primera busqueda al arrancar, para no salir buscando
-  # en el mismo segundo en que enciendes el ordenador.
+  # A margin before the first search on startup, so it does not go searching
+  # the very second you turn the computer on.
   first_run_after_minutes: 3
 
 telegram:
-  # Cuantas ofertas manda como maximo cada ejecucion, de mejor a peor nota.
-  # Con 50 te llegan practicamente todas las que pasan el umbral. No lo
-  # quites del todo: es la red que evita que un fallo te mande 500 mensajes.
+  # How many postings it sends at most per run, best score first. With 50 you
+  # get practically everything above the threshold. Do not remove it entirely:
+  # it is the net that stops a bug from sending you 500 messages.
   max_alerts_per_run: 50
-  # Segundos entre mensaje y mensaje. Telegram descarta los envios muy
-  # seguidos en un mismo chat, asi que por debajo de 1 segundo se pierden.
+  # Seconds between one message and the next. Telegram drops sends that come
+  # too close together in the same chat, so below 1 second they get lost.
   delay_between_messages: 1.2

@@ -1,9 +1,9 @@
 """Manfred (getmanfred.com).
 
-La mejor fuente del lote: API publica en JSON, con rango salarial y porcentaje
-de remoto en el propio listado, asi que el filtro de salario funciona antes de
-descargar nada mas. La descripcion se saca de la ficha, solo para las ofertas
-que ya han pasado el primer corte.
+The best source of the lot: a public JSON API, with the salary range and the
+remote percentage in the listing itself, so the salary filter works before
+downloading anything else. The description comes from the detail page, only
+for postings that already passed the first cut.
 """
 
 from __future__ import annotations
@@ -88,10 +88,10 @@ class ManfredSource(BaseSource):
         )
 
     async def _with_description(self, offer: JobOffer) -> JobOffer:
-        """La ficha trae un bloque JSON-LD de JobPosting con el texto completo."""
+        """The detail page carries a JSON-LD JobPosting block with the full text."""
         try:
             html = await self.http.get_text(offer.url)
-        except Exception:  # noqa: BLE001 - sin descripcion la oferta sigue valiendo
+        except Exception:  # noqa: BLE001 - without a description the posting is still worth keeping
             logger.debug("No se pudo leer la ficha de %s", offer.url)
             return offer
 

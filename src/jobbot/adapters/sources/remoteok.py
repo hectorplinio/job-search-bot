@@ -1,7 +1,7 @@
 """RemoteOK.
 
-API publica en JSON, sin clave, con salario en dolares y todo remoto por
-definicion. Cubre el hueco internacional que dejaba Otta.
+A public JSON API, no key, with salaries in dollars and everything remote by
+definition. It covers the international gap Otta left open.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ class RemoteOkSource(BaseSource):
         if not isinstance(payload, list):
             return []
 
-        # El primer elemento del array es el aviso legal de RemoteOK, no una oferta.
+        # The first array item is RemoteOK's legal notice, not a posting.
         rows = [row for row in payload if isinstance(row, dict) and row.get("id")]
 
         terms = criteria.keywords.required_any

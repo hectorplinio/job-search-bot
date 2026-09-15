@@ -1,4 +1,4 @@
-"""Modelos del dominio. Sin dependencias de infraestructura."""
+"""Domain models. No infrastructure dependencies."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ class WorkMode(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class SalaryRange:
-    """Salario anual bruto. `None` significa "la oferta no lo dice"."""
+    """Gross annual salary. `None` means "the posting does not say"."""
 
     minimum: int | None = None
     maximum: int | None = None
@@ -28,7 +28,7 @@ class SalaryRange:
 
     @property
     def best_case(self) -> int | None:
-        """El techo del rango, o el suelo si no hay techo."""
+        """The top of the range, or the bottom when there is no top."""
         return self.maximum if self.maximum is not None else self.minimum
 
     @property
@@ -52,7 +52,7 @@ class SalaryRange:
 
 @dataclass(frozen=True, slots=True)
 class JobOffer:
-    """Una oferta tal y como la devuelve una fuente, ya normalizada."""
+    """A job posting as a source returns it, already normalised."""
 
     source: str
     external_id: str
@@ -64,15 +64,15 @@ class JobOffer:
     work_mode: WorkMode = WorkMode.UNKNOWN
     salary: SalaryRange = field(default_factory=SalaryRange)
     posted_at: date | None = None
-    # Cuantos han solicitado ya, cuando la fuente lo publica. Aplicar el
-    # primer dia a una oferta con 5 candidatos no se parece en nada a
-    # aplicar a la misma con 200.
+    # How many people have already applied, when the source publishes it.
+    # Applying on day one to a posting with 5 applicants is nothing like
+    # applying to the same one with 200.
     applicants: int | None = None
     tags: tuple[str, ...] = ()
 
     @property
     def searchable_text(self) -> str:
-        """Todo el texto de la oferta en minusculas, para buscar keywords."""
+        """The whole posting in lowercase, for keyword matching."""
         parts = [self.title, self.company, self.location or "", self.description, *self.tags]
         return " ".join(parts).lower()
 
@@ -82,7 +82,7 @@ class JobOffer:
 
 @dataclass(frozen=True, slots=True)
 class MatchScore:
-    """Resultado de evaluar una oferta contra el perfil."""
+    """The result of scoring a posting against the profile."""
 
     value: int  # 1-10
     reasons: tuple[str, ...] = ()
@@ -99,12 +99,12 @@ class ScoredOffer:
     offer: JobOffer
     score: MatchScore
     fingerprint: str
-    summary: str = ""  # el "por que encaja" que va a Telegram
+    summary: str = ""  # the "why it fits" line that goes to Telegram
 
 
 @dataclass(frozen=True, slots=True)
 class ApplicationDocuments:
-    """Lo que genera el LLM para una oferta concreta."""
+    """What the LLM writes for one specific posting."""
 
     cover_letter: str
     cv_summary: str

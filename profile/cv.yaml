@@ -1,12 +1,13 @@
-# Perfil del candidato. Es la unica fuente de verdad que ve el LLM cuando
-# escribe cover letters y reescribe el summary. Manten esto sincronizado
-# con tu CV (esta en ../CV/, fuera del repo a proposito).
+# The candidate profile. It is the only source of truth the LLM sees when it
+# writes cover letters and rewrites the summary. Keep it in sync with your CV
+# (which lives in ../CV/, outside the repo on purpose).
 
 name: Hector Plinio Navarro
 headline: Full Stack Software Developer
-# Este fichero se publica en el repo. El email va fuera a proposito: no lo
-# usa nada (el prompt no lo incluye) y en un repo publico lo rastrean los
-# bots de spam. Si algun dia hace falta, que venga de una variable de entorno.
+# This file is published in the repo. The email is left out on purpose:
+# nothing uses it (the prompt does not include it) and in a public repo the
+# spam bots crawl it. If it is ever needed, it should come from an
+# environment variable.
 email: ""
 languages:
   - "Spanish: native"
@@ -141,8 +142,8 @@ education:
   - "Higher National Diploma in Web Application Development - IES Hermanos Amoros, Villena (2020-2022)"
   - "Higher National Diploma in International Trade - IES Las Fuentes, Villena (2012-2014)"
 
-# Que experiencia sacar a portada segun lo que pida la oferta. Lo usa el
-# generador de summary para decidir el orden y el enfasis.
+# Which experience to bring to the front, based on what the posting asks for.
+# The summary generator uses it to decide order and emphasis.
 emphasis_rules:
   python: [ascend_makers, telefonica]
   fastapi: [ascend_makers]
@@ -167,9 +168,9 @@ emphasis_rules:
   "hexagonal architecture": [ascend_makers, jobandtalent, devaway]
   tdd: [ascend_makers]
 
-# Anclas que la cover letter debe intentar usar cuando la oferta lo justifique.
-# Que experiencia destacar en la carta. Son ids de `experience`, asi que el
-# prompt no nombra ninguna empresa: cambia este bloque y sirve para otro perfil.
+# Which experience the cover letter should highlight. These are ids from
+# `experience`, so the prompt names no company: change this block and it
+# serves another profile.
 cover_letter_anchors:
   always: ascend_makers
   when:

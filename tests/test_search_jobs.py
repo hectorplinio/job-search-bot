@@ -28,7 +28,7 @@ class FakeNotifier:
 
 
 class FakeWriter:
-    """Devuelve siempre un 9 para comprobar que la nota del LLM manda."""
+    """Always returns a 9, to check that the LLM score wins."""
 
     def __init__(self) -> None:
         self.calls = 0
@@ -133,8 +133,8 @@ async def test_dry_run_no_manda_nada(tmp_path, criteria, profile) -> None:
 
 
 async def test_dry_run_no_deja_rastro_en_el_historial(tmp_path, criteria, profile) -> None:
-    """Un ensayo que guardase daria las ofertas por vistas, y la siguiente
-    ejecucion de verdad no te mandaria ninguna."""
+    """A dry run that saved would mark postings as seen, and the next real
+    run would send you none of them."""
     buena = make_offer(external_id="a", url="https://example.com/a")
     descartada = make_offer(
         external_id="b", url="https://example.com/b", title="Junior Python Developer"
@@ -144,10 +144,10 @@ async def test_dry_run_no_deja_rastro_en_el_historial(tmp_path, criteria, profil
     use_case, repository, notifier = build(tmp_path, [source], criteria, profile)
     await use_case.run(dry_run=True)
 
-    # Ni las buenas ni las descartadas: el historial sigue vacio.
+    # Neither the good ones nor the rejected ones: the history stays empty.
     assert repository.stats()["vistas"] == 0
 
-    # Y la ejecucion real que viene detras si te las manda.
+    # And the real run that follows does send them.
     real, _repo, real_notifier = build(tmp_path, [source], criteria, profile)
     real._repository = repository
     report = await real.run()
@@ -158,7 +158,7 @@ async def test_dry_run_no_deja_rastro_en_el_historial(tmp_path, criteria, profil
 
 
 async def test_el_llm_reemplaza_la_nota_de_reglas(tmp_path, criteria, profile) -> None:
-    # Una oferta sin salario ni modalidad saca menos por reglas; el LLM la sube.
+    # A posting with no salary or work mode scores lower by rules; the LLM lifts it.
     offer = make_offer(salary=SalaryRange(), work_mode=WorkMode.UNKNOWN)
     writer = FakeWriter()
     use_case, repository, notifier = build(
@@ -179,7 +179,7 @@ async def test_una_fuente_caida_no_tumba_la_ejecucion(tmp_path, criteria, profil
         name = "rota"
 
         async def safe_search(self, _criteria):
-            return []  # safe_search ya se traga la excepcion
+            return []  # safe_search already swallows the exception
 
     use_case, repository, notifier = build(
         tmp_path,
@@ -198,8 +198,8 @@ async def test_una_fuente_caida_no_tumba_la_ejecucion(tmp_path, criteria, profil
 async def test_lo_que_corta_el_tope_se_manda_en_la_siguiente_pasada(
     tmp_path, criteria, profile
 ) -> None:
-    """Antes se perdian para siempre: quedaban guardadas como vistas, asi que
-    la deteccion de duplicados impedia que volvieran a entrar nunca."""
+    """They used to be lost forever: they were stored as seen, so deduplication
+    stopped them from ever coming back."""
     criteria.telegram.max_alerts_per_run = 1
     ofertas = [
         make_offer(external_id=str(i), url=f"https://example.com/{i}", company=f"Empresa{i}")
@@ -213,23 +213,23 @@ async def test_lo_que_corta_el_tope_se_manda_en_la_siguiente_pasada(
     assert primera.notified == 1
     assert primera.still_pending == 2
 
-    # Segunda pasada: la fuente devuelve lo mismo, todo duplicado, y aun asi
-    # sale una de la cola.
+    # Second pass: the source returns the same thing, all duplicates, and one
+    # still comes out of the backlog.
     segunda = await use_case.run()
     assert segunda.duplicates == 3
     assert segunda.notified == 1
     assert segunda.from_backlog == 1
     assert segunda.still_pending == 1
 
-    # Y no se repite ninguna.
+    # And none of them repeats.
     urls = [item.offer.url for item in notifier.sent]
     assert len(urls) == len(set(urls))
     repository.close()
 
 
 async def test_los_criterios_se_releen_en_cada_busqueda(tmp_path, criteria, profile, monkeypatch):
-    """Tocar config.yaml obligaba a reiniciar el bot, y es justo el fichero
-    que mas se toca."""
+    """Touching config.yaml used to mean restarting the bot, and it is exactly
+    the file you touch most."""
     import yaml
 
     from jobbot.container import Container
@@ -250,10 +250,10 @@ async def test_los_criterios_se_releen_en_cada_busqueda(tmp_path, criteria, prof
     assert contenedor.reload_criteria() is True
     assert contenedor.criteria.scoring.notify_threshold == 8
 
-    # Sin cambios, no hace nada.
+    # With no changes, it does nothing.
     assert contenedor.reload_criteria() is False
 
-    # Y un fichero roto deja los criterios anteriores en pie.
+    # And a broken file leaves the previous criteria standing.
     config.write_text("esto: no: es: yaml: valido:", encoding="utf-8")
     assert contenedor.reload_criteria() is False
     assert contenedor.criteria.scoring.notify_threshold == 8

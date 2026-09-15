@@ -1,4 +1,4 @@
-"""Adaptadores de fuentes de ofertas."""
+"""Job source adapters."""
 
 from .registry import build_sources
 

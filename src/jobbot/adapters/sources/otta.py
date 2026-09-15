@@ -1,19 +1,19 @@
-"""Otta, ahora dentro de Welcome to the Jungle.
+"""Otta, now part of Welcome to the Jungle.
 
-Esta fuente va por navegador y no por HTTP, por dos razones comprobadas:
+This source goes through a browser rather than HTTP, for two measured reasons:
 
-1. El sitio esta detras de AWS WAF con reto de JavaScript. Una peticion con
-   `httpx` recibe un 202 con 2 KB y la cabecera `x-amzn-waf-action: challenge`.
-   Copiar la cookie tampoco basta: hace falta un `aws-waf-token` que caduca en
-   poco mas de una hora.
-2. Otta no tiene listado de ofertas. Te ensena una y pasas a la siguiente con
-   un boton. Hay que recorrerlas.
+1. The site sits behind AWS WAF with a JavaScript challenge. A request with
+   `httpx` gets a 202 with 2 KB and the header `x-amzn-waf-action: challenge`.
+   Copying the cookie is not enough either: it needs an `aws-waf-token` that
+   expires in little over an hour.
+2. Otta has no listing page. It shows you one posting and you move to the next
+   with a button. They have to be walked one by one.
 
-Y no usa las queries de config.yaml. Otta calcula tus "matches" a partir del
-perfil que tengas en su web, asi que lo que afina esta fuente es ajustar tus
-preferencias alli, no tocar nada aqui.
+It also ignores the queries in config.yaml. Otta computes your "matches" from
+the profile you keep on their site, so what tunes this source is adjusting your
+preferences over there, not changing anything here.
 
-Requisitos:
+Requirements:
 
     pip install -e ".[browser]"
     playwright install chromium
@@ -33,8 +33,8 @@ logger = logging.getLogger(__name__)
 
 JOBS_URL = "https://app.welcometothejungle.com/jobs"
 
-# Otta marca su interfaz con data-testid, que aguanta los cambios de diseno
-# mucho mejor que las clases CSS.
+# Otta marks its interface with data-testid, which survives redesigns far
+# better than CSS classes.
 FIELD_TITLE = "job-title"
 FIELD_SALARY = "salary-section"
 FIELD_LOCATIONS = "job-locations"
@@ -94,13 +94,13 @@ class OttaSource(BaseSource):
 
     @staticmethod
     async def _dismiss_cookie_banner(page) -> None:
-        """El aviso de cookies tapa el boton de siguiente y corta el recorrido."""
+        """The cookie banner covers the next button and stops the walk."""
         for label in COOKIE_BANNER_LABELS:
             try:
                 await page.click(f'button:has-text("{label}")', timeout=2500)
                 await page.wait_for_timeout(1200)
                 return
-            except Exception:  # noqa: BLE001 - si no sale el banner, mejor
+            except Exception:  # noqa: BLE001 - if the banner never appears, all the better
                 continue
 
     @staticmethod
@@ -109,7 +109,7 @@ class OttaSource(BaseSource):
             return await page.eval_on_selector(
                 f'[data-testid="{testid}"]', "el => el.innerText.trim()"
             )
-        except Exception:  # noqa: BLE001 - no todas las ofertas traen cada campo
+        except Exception:  # noqa: BLE001 - not every posting carries every field
             return ""
 
     async def _read_current_job(self, page) -> JobOffer | None:
@@ -117,7 +117,7 @@ class OttaSource(BaseSource):
         if not heading:
             return None
 
-        # Otta mete puesto y empresa en el mismo campo: "Backend Engineer, Acme".
+        # Otta puts role and company in one field: "Backend Engineer, Acme".
         title, _, company = heading.rpartition(",")
         if not title:
             title, company = heading, ""
@@ -128,9 +128,9 @@ class OttaSource(BaseSource):
         experience = await self._field(page, FIELD_EXPERIENCE)
         body = await self._field(page, FIELD_BODY)
 
-        # El nivel de experiencia entra en la descripcion a proposito: Otta
-        # publica cosas como "Junior and Mid level", que el filtro de titulo no
-        # ve pero el scoring si debe tener en cuenta.
+        # The seniority goes into the description on purpose: Otta publishes
+        # things like "Junior and Mid level", which the title filter does not
+        # see but the scoring should take into account.
         description = clean_text(
             " ".join(
                 part.replace("\n", ", ")
@@ -157,9 +157,9 @@ class OttaSource(BaseSource):
         previous_url = page.url
         try:
             await page.click(NEXT_BUTTON, timeout=5000)
-        except Exception:  # noqa: BLE001 - se acabaron los matches
+        except Exception:  # noqa: BLE001 - the matches have run out
             return False
 
         await page.wait_for_timeout(4000)
-        # Si la URL no cambia, no quedan mas ofertas por ver.
+        # If the URL does not change, there are no more postings to see.
         return page.url != previous_url

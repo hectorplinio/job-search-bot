@@ -1,11 +1,11 @@
-"""Registro de lo que se gasta en la API de Claude.
+"""A log of what the Claude API costs.
 
-Guarda el coste calculado en el momento de la llamada, no solo los tokens.
-Si Anthropic cambia precios manana, lo que ya gastaste sigue contando con el
-precio que tenia entonces.
+It stores the cost as computed at call time, not just the tokens. If Anthropic
+changes prices tomorrow, what you already spent still counts at the price it
+had back then.
 
-Vive en el mismo fichero SQLite que el historial de ofertas: una sola cosa
-que respaldar.
+It lives in the same SQLite file as the posting history: one single thing to
+back up.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_usage_when ON llm_usage(happened_at);
 
 
 class SqliteUsageLog:
-    """Implementacion de UsageLog sobre SQLite."""
+    """UsageLog implemented on SQLite."""
 
     def __init__(self, db_path: str | Path) -> None:
         self.db_path = Path(db_path)
@@ -50,7 +50,7 @@ class SqliteUsageLog:
         self._connection.close()
 
     def record(self, usage: TokenUsage, operation: str) -> float:
-        """Apunta una llamada y devuelve lo que costo."""
+        """Records one call and returns what it cost."""
         coste = cost_usd(usage)
         self._connection.execute(
             """
@@ -84,7 +84,7 @@ class SqliteUsageLog:
                    COALESCE(SUM(output_tokens), 0) AS salida,
                    COALESCE(SUM(cost_usd), 0) AS coste
             FROM llm_usage {condicion}
-            """,  # noqa: S608 - la condicion es literal, no viene de fuera
+            """,  # noqa: S608 - the condition is a literal, it does not come from outside
             parametros,
         ).fetchone()
         return {clave: fila[clave] for clave in ("llamadas", "entrada", "salida", "coste")}
@@ -98,7 +98,7 @@ class SqliteUsageLog:
         }
 
     def by_operation(self) -> list[sqlite3.Row]:
-        """En que se va el dinero: puntuar ofertas o escribir candidaturas."""
+        """Where the money goes: scoring postings or writing applications."""
         return self._connection.execute("""
             SELECT operation, COUNT(*) AS llamadas, SUM(cost_usd) AS coste
             FROM llm_usage GROUP BY operation ORDER BY coste DESC

@@ -1,8 +1,12 @@
-"""Prompts para Claude. Separados del adaptador para poder iterarlos solos.
+"""Prompts for Claude. Kept apart from the adapter so they can be iterated
+on their own.
 
-Ninguno nombra una empresa ni una tecnologia concreta: todo sale de
-`profile/cv.yaml`, asi que el bot sirve para otro perfil (frontend, datos,
-mobile) cambiando ese fichero y `config.yaml`.
+None of them names a company or a specific technology: it all comes from
+`profile/cv.yaml`, so the bot serves another profile (frontend, data, mobile)
+by changing that file and `config.yaml`.
+
+The prompt text itself is in Spanish because that is the language the
+Telegram alerts are written in.
 """
 
 from __future__ import annotations
@@ -54,7 +58,7 @@ Reglas del summary del CV:
 
 
 def rating_system(profile: CandidateProfile) -> str:
-    """Instrucciones de puntuacion, construidas con el stack del perfil."""
+    """Scoring instructions, built from the profile's stack."""
     skills = profile.all_skills()[:14]
     return _RATING_TEMPLATE.format(
         headline=profile.headline or "el perfil del candidato",
@@ -63,7 +67,7 @@ def rating_system(profile: CandidateProfile) -> str:
 
 
 def _anchor_lines(profile: CandidateProfile) -> str:
-    """Que experiencia destacar, resuelta desde los ids del perfil."""
+    """Which experience to highlight, resolved from the profile's ids."""
     anchors = profile.cover_letter_anchors
     lines: list[str] = []
 
@@ -89,7 +93,7 @@ def _anchor_lines(profile: CandidateProfile) -> str:
 
 
 def writing_system(profile: CandidateProfile) -> str:
-    """Instrucciones de redaccion, con los anclajes del perfil."""
+    """Writing instructions, with the profile's anchors."""
     return _WRITING_TEMPLATE.format(name=profile.name, anchors=_anchor_lines(profile))
 
 
