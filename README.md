@@ -4,71 +4,71 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-Busca ofertas en nueve portales, las puntúa contra tu perfil y te manda al
-Telegram solo las que valen la pena. Le pasas el enlace de una oferta y te
-devuelve la cover letter y el summary del CV adaptados.
+Searches nine job boards, scores every posting against your profile and sends
+only the ones worth your time to Telegram. Hand it the link to a posting and it
+writes you a tailored cover letter and CV summary.
 
-Viene configurado para un perfil de backend (Python, Node/TypeScript,
-microservicios, arquitectura hexagonal), pero sirve para cualquier perfil: todo
-el criterio vive en `config.yaml` y `profile/cv.yaml`, así que cambiarlo no toca
-código. Hay un ejemplo completo de otro perfil en [`examples/frontend/`](examples/frontend/)
-y las instrucciones en [Usarlo con tu perfil](#usarlo-con-tu-perfil).
+It ships configured for a backend profile (Python, Node/TypeScript,
+microservices, hexagonal architecture), but it works for any profile: all the
+criteria live in `config.yaml` and `profile/cv.yaml`, so changing them touches
+no code. There is a complete second profile in
+[`examples/frontend/`](examples/frontend/), and the instructions are in
+[Using it with your own profile](#using-it-with-your-own-profile).
 
 ---
 
-## Arranque rápido
+## Quick start
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate          # en Linux/macOS: source .venv/bin/activate
+.venv\Scripts\activate          # on Linux/macOS: source .venv/bin/activate
 pip install -e .
 
-copy .env.example .env          # en Linux/macOS: cp .env.example .env
+copy .env.example .env          # on Linux/macOS: cp .env.example .env
 ```
 
-Rellena `.env` con tres cosas:
+Fill in `.env` with three things:
 
-| Variable | De dónde sale |
+| Variable | Where it comes from |
 |---|---|
-| `TELEGRAM_BOT_TOKEN` | El token que te da BotFather (ver abajo) |
-| `TELEGRAM_CHAT_ID` | Tu chat, con `jobbot chat-id` (ver abajo) |
+| `TELEGRAM_BOT_TOKEN` | The token BotFather gives you (see below) |
+| `TELEGRAM_CHAT_ID` | Your chat, via `jobbot chat-id` (see below) |
 | `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com/settings/keys) |
 
-### Crear el bot de Telegram
+### Creating the Telegram bot
 
-Son dos minutos y no hace falta darse de alta en nada más.
+It takes two minutes and needs no other sign-up.
 
-1. Abre Telegram y busca **[@BotFather](https://t.me/BotFather)**, la cuenta
-   oficial con la que se crean los bots. Tiene marca de verificado.
-2. Escríbele `/newbot`.
-3. Te pide un **nombre** (el que verás en la lista de chats, por ejemplo
-   `Mis ofertas`) y después un **usuario**, que debe terminar en `bot` y ser
-   único, por ejemplo `ofertas_de_ada_bot`.
-4. Te responde con un token parecido a `8123456789:AAH...`. Cópialo en
-   `TELEGRAM_BOT_TOKEN` dentro de `.env`. **Ese token es una contraseña**: quien
-   lo tenga controla el bot. No lo subas a ningún repositorio.
-5. Busca tu bot por el usuario que le pusiste, abre el chat y pulsa **Iniciar**.
-   Este paso es obligatorio: Telegram no deja que un bot escriba primero.
-6. Escríbele cualquier cosa, por ejemplo `hola`, y ejecuta:
+1. Open Telegram and search for **[@BotFather](https://t.me/BotFather)**, the
+   official account that creates bots. It has a verified badge.
+2. Send it `/newbot`.
+3. It asks for a **name** (what you will see in your chat list, for example
+   `My job alerts`) and then a **username**, which must end in `bot` and be
+   unique, for example `ada_job_alerts_bot`.
+4. It replies with a token that looks like `8123456789:AAH...`. Copy it into
+   `TELEGRAM_BOT_TOKEN` in `.env`. **That token is a password**: whoever holds
+   it controls the bot. Never commit it to a repository.
+5. Search for your bot by the username you chose, open the chat and press
+   **Start**. This step is required: Telegram does not let a bot write first.
+6. Send it anything, say `hello`, and run:
 
    ```bash
    jobbot chat-id
    ```
 
-   Te imprime el identificador de tu chat. Cópialo en `TELEGRAM_CHAT_ID`.
+   It prints your chat id. Copy it into `TELEGRAM_CHAT_ID`.
 
-Si `jobbot chat-id` no encuentra nada, es que el bot no tiene mensajes sin
-leer: vuelve a escribirle y repite. Y si ya tienes el bot arrancado con
-`jobbot bot`, párralo antes, porque el proceso que está escuchando se queda con
-los mensajes.
+If `jobbot chat-id` finds nothing, the bot has no unread messages: write to it
+again and repeat. And if you already have the bot running with `jobbot bot`,
+stop it first, because the listening process takes the messages.
 
-Prueba sin gastar nada ni mandar nada:
+Try it without spending or sending anything:
 
 ```bash
 jobbot run --dry-run --no-llm
 ```
 
-Cuando te convenza lo que sale por pantalla:
+When you like what you see on screen:
 
 ```bash
 jobbot run
@@ -76,314 +76,318 @@ jobbot run
 
 ---
 
-## Comandos
+## Commands
 
 ```
-jobbot run                    una pasada: busca, filtra, puntúa y avisa
-jobbot run --dry-run          igual, pero sin mandar nada a Telegram
-jobbot run --no-llm           solo scoring por reglas, sin gastar en la API
-jobbot bot                    arranca el bot para hablar con él
-jobbot apply <url>            cover letter + summary de una oferta
-jobbot apply <url> -o out/    y además los guarda en ficheros
-jobbot stats                  qué lleva visto el bot
-jobbot usage                  cuánto llevas gastado en la API de Claude
-jobbot sources                qué fuentes están activas
-jobbot check-sources          prueba cada fuente y dice cuántas devuelve
-jobbot login [portal]         renueva la sesión de un portal con tu cuenta
-jobbot cookies                estado de las sesiones guardadas
-jobbot chat-id                tu chat id de Telegram
+jobbot run                    one pass: search, filter, score and alert
+jobbot run --dry-run          the same, but sends nothing to Telegram
+jobbot run --no-llm           rule-based scoring only, spends nothing on the API
+jobbot bot                    starts the bot so you can talk to it
+jobbot apply <url>            cover letter + summary for one posting
+jobbot apply <url> -o out/    and saves them to files as well
+jobbot stats                  what the bot has seen
+jobbot usage                  how much you have spent on the Claude API
+jobbot sources                which sources are enabled
+jobbot check-sources          tries every source and reports how many it returns
+jobbot login [board]          renews a job board session with your account
+jobbot cookies                the state of the stored sessions
+jobbot chat-id                your Telegram chat id
 ```
 
-En Telegram, con `jobbot bot` corriendo:
+In Telegram, with `jobbot bot` running:
 
 ```
-/buscar          lanza una búsqueda ahora
-/top             las mejores pendientes de mandarte
+/buscar          runs a search now
+/top             the best postings still pending
 /oferta <url>    cover letter + summary
-/carta <url>     solo la cover letter
-/summary <url>   solo el summary del CV
-/stats           historial
-/usage           gasto en la API de Claude
-/proxima         cuándo toca la siguiente búsqueda
+/carta <url>     cover letter only
+/summary <url>   CV summary only
+/stats           history
+/usage           spend on the Claude API
+/proxima         when the next search is due
 ```
 
-También puedes pegarle un enlace a pelo, o el texto de la oferta cuando el
-portal pide login. Cada alerta lleva dos botones, **Cover letter** y **Summary**,
-que generan los documentos sin que tengas que copiar la URL.
+You can also paste it a bare link, or the text of a posting when the board
+demands a login. Every alert carries two buttons, **Cover letter** and
+**Summary**, which write the documents without you copying the URL.
 
 ---
 
-## Las fuentes
+## The sources
 
-Probadas contra los portales reales en septiembre de 2026.
+Tested against the real job boards in September 2026.
 
-| Fuente | Cómo entra | Estado |
+| Source | How it gets in | State |
 |---|---|---|
-| Bolsas propias | Greenhouse y Ashby, JSON sin clave | **La mejor**: la oferta aparece aquí antes que en ningún sitio |
-| Manfred | API pública JSON | Muy buena: trae salario y % de remoto en el listado |
-| LinkedIn | Endpoint de invitado, sin login | Funciona, pero su ranking esconde ofertas |
-| Tecnoempleo | HTML del buscador | Funciona |
-| InfoJobs | HTML del buscador | Funciona a ratos: corta por IP y tarda en soltar |
-| RemoteOK | API pública JSON | Funciona; ofertas internacionales en USD |
-| We Work Remotely | RSS | Funciona |
-| Remotive | API pública JSON | **Apagada**: su feed libre son 16 ofertas, todas de una agencia |
-| Himalayas | API pública JSON | Empresas de EEUU; pagina, pero 9 de cada 10 son US only |
-| Otta | Navegador con tu sesión | Funciona: recorre tus matches uno a uno |
-| Glassdoor | HTML del buscador | **Apagada**: 403 por IP a las pocas peticiones |
+| Company boards | Greenhouse and Ashby, JSON with no key | **The best**: the posting shows up here before anywhere else |
+| Manfred | Public JSON API | Very good: salary and remote percentage in the listing |
+| LinkedIn | Guest endpoint, no login | Works, but its ranking hides postings |
+| Tecnoempleo | Search page HTML | Works |
+| InfoJobs | Search page HTML | Works on and off: blocks by IP and is slow to release |
+| RemoteOK | Public JSON API | Works; international postings in USD |
+| We Work Remotely | RSS | Works |
+| Remotive | Public JSON API | **Off**: its free feed is 16 postings, all from one agency |
+| Himalayas | Public JSON API | US companies; it pages, but 9 out of 10 are US only |
+| Otta | Browser with your session | Works: walks your matches one at a time |
+| Glassdoor | Search page HTML | **Off**: 403 by IP after a few requests |
 
-Otta es la única que necesita cuenta: Playwright más `jobbot login otta`. Las
-otras seis funcionan sin registrarse en ningún sitio.
+Otta is the only one that needs an account: Playwright plus `jobbot login otta`.
+The others work without registering anywhere.
 
-**Cómo llegar a empresas extranjeras sin salir de España.** No es ampliando
-las ubicaciones de LinkedIn. Medido: buscando en United Kingdom, Ireland o
-United States, 0 de cada 30 resultados eran accesibles desde España, porque su
-filtro es por dónde *está* el puesto, no por quién puede aplicar.
+**How to reach foreign companies without leaving Spain.** Not by widening
+LinkedIn's locations. Measured: searching in the United Kingdom, Ireland or the
+United States, 0 out of 30 results were open to someone in Spain, because their
+filter is about where the role *is*, not who may apply.
 
-Lo que sí funciona es leer la bolsa de empleo propia de las empresas. Grafana
-Labs publica el mismo puesto por país, así que ahí aparece la versión española
-que ningún agregador te enseña:
-
-```
-Grafana Labs   125 ofertas en su bolsa  ->  8 para España
-Affirm         203 ofertas              -> 19 para España
-Monzo           69 ofertas              ->  8 entre Barcelona y Madrid
-```
-
-Las empresas se configuran en `sources.companies.watchlist`. Para añadir una,
-mira la URL de su página de empleo: `job-boards.greenhouse.io/EMPRESA` es
-`ats: greenhouse`, y `jobs.ashbyhq.com/EMPRESA` es `ats: ashby`.
-
-**Sobre las ofertas de Estados Unidos.** Remotive y Himalayas publican desde
-qué países admiten candidatos, así que el bot descarta las que no puedes
-aceptar antes de puntuarlas. La proporción medida en una pasada real:
+What does work is reading the companies' own job boards. Grafana Labs publishes
+the same role per country, so the Spanish version that no aggregator shows you
+appears right there:
 
 ```
-120 ofertas revisadas en Himalayas -> 110 solo para EEUU -> 2 aptas
+Grafana Labs   125 postings on its board  ->  8 for Spain
+Affirm         203 postings               -> 19 for Spain
+Monzo           69 postings               ->  8 across Barcelona and Madrid
 ```
 
-No es un fallo del filtro, es cómo está el mercado. Una empresa estadounidense
-necesita un Employer of Record para contratar en España, y la mayoría no lo
-tiene montado.
+Companies are configured in `sources.companies.watchlist`. To add one, look at
+the URL of its careers page: `job-boards.greenhouse.io/COMPANY` means
+`ats: greenhouse`, and `jobs.ashbyhq.com/COMPANY` means `ats: ashby`.
 
-**Lo que LinkedIn no te va a dar.** Su endpoint de invitado sirve 10
-resultados por petición, así que el bot pagina para recoger más. Aun así, su
-ranking para búsquedas genéricas deja ofertas fuera del alcance: comprobado
-que una oferta concreta no aparecía en los 100 primeros resultados de
-`backend engineer python`, y sí salía buscando por el nombre de la empresa.
-Ninguna cantidad de páginas arregla eso. Un buscador es un embudo, no una
-garantía.
+**About United States postings.** Remotive and Himalayas publish which countries
+they accept candidates from, so the bot drops the ones you cannot take before
+scoring them. The proportion measured on a real run:
 
-Una fuente que falla devuelve cero y las demás siguen: nunca tumba la ejecución.
-El resumen de cada pasada te dice cuántas ha traído cada una, así que si una se
-rompe lo ves enseguida.
+```
+120 postings reviewed on Himalayas -> 110 United States only -> 2 eligible
+```
+
+That is not a filter bug, it is the state of the market. A United States
+company needs an Employer of Record to hire in Spain, and most have not set one
+up.
+
+**What LinkedIn will not give you.** Its guest endpoint serves 10 results per
+request, so the bot pages to collect more. Even so, its ranking for generic
+searches leaves postings out of reach: a specific posting was verified not to
+appear in the first 100 results for `backend engineer python`, while it came up
+first when searching by the company name. No amount of paging fixes that. A
+search engine is a funnel, not a guarantee.
+
+A source that fails returns zero and the rest carry on: it never sinks the run.
+The summary of each pass tells you how many each one brought, so a broken
+source is visible immediately.
 
 ---
 
-## Usar tus cuentas
+## Using your own accounts
 
-Cuatro portales cambian de comportamiento si entras logueado. Resumen de qué
-gana cada uno y qué arriesgas:
+Four job boards behave differently when you are signed in. What each one gains
+and what you risk:
 
-| Portal | Qué gana con tu cuenta | Recomendación |
+| Board | What your account gains | Recommendation |
 |---|---|---|
-| InfoJobs | Deja de cortarte por IP | Sí |
-| Glassdoor | Deja de responder 403 | Sí |
-| Otta | Es la única forma: el listado está tras el alta | Sí, con navegador |
-| LinkedIn | Prácticamente nada | **No** |
+| InfoJobs | It stops blocking you by IP | Yes |
+| Glassdoor | It stops answering 403 | Yes |
+| Otta | It is the only way: the listing is behind sign-up | Yes, with a browser |
+| LinkedIn | Practically nothing | **No** |
 
-### Por qué LinkedIn no
+### Why not LinkedIn
 
-El endpoint de invitado ya devuelve los mismos resultados sin autenticarse.
-Añadir tu sesión no mejora nada apreciable y sí cambia quién paga si algo sale
-mal: un bloqueo por IP anónima no te afecta, una restricción de cuenta te deja
-sin perfil justo mientras buscas trabajo. LinkedIn es de los que más persiguen
-el acceso automatizado. El código admite `LINKEDIN_COOKIE` porque es tu
-decisión, pero avisa en cada ejecución y `jobbot login linkedin` te pregunta
-antes de seguir.
+The guest endpoint already returns the same results without authenticating.
+Adding your session improves nothing noticeable and does change who pays if
+something goes wrong: a block on an anonymous IP costs you nothing, an account
+restriction leaves you without a profile exactly while you are job hunting.
+LinkedIn is among the most aggressive about automated access. The code accepts
+`LINKEDIN_COOKIE` because it is your call, but it warns on every run and
+`jobbot login linkedin` asks before going ahead.
 
-### Cómo se renuevan las sesiones
+### How sessions are renewed
 
-Las cookies caducan. Copiarlas a mano del navegador cada semana no es plan, y
-hacer login con usuario y contraseña por HTTP directo no funciona: los cuatro
-portales protegen también el login, con captcha, con detección de cliente o,
-en el caso de Otta, con un reto de AWS WAF que exige ejecutar JavaScript.
+Cookies expire. Copying them from the browser by hand every week is no way to
+live, and logging in with a username and password over plain HTTP does not
+work: all four boards protect their login too, with captchas, with client
+fingerprinting or, in Otta's case, with an AWS WAF challenge that requires
+executing JavaScript.
 
-Lo que sí funciona es un navegador de verdad con perfil persistente:
+What does work is a real browser with a persistent profile:
 
 ```bash
 pip install -e ".[browser]"
 playwright install chromium
 
-jobbot login              # abre una ventana por cada portal
-jobbot login infojobs     # o solo uno
-jobbot login infojobs --auto   # rellena el formulario con lo de .env
+jobbot login              # opens one window per board
+jobbot login infojobs     # or just one
+jobbot login infojobs --auto   # fills the form with what is in .env
 ```
 
-La primera vez entras tú en la ventana, con tu 2FA y tu captcha si los pide.
-El perfil queda en `data/browser-profile/` y guarda la sesión durante semanas,
-así que las siguientes veces basta con repetir el comando: ya no pide
-contraseña. Las cookies se guardan en `data/cookies.json` con su fecha de
-caducidad, y mandan sobre lo que pongas a mano en `.env`.
+The first time you sign in yourself in the window, with your 2FA and your
+captcha if it asks. The profile stays in `data/browser-profile/` and keeps the
+session for weeks, so from then on repeating the command is enough: it no
+longer asks for a password. The cookies are stored in `data/cookies.json` with
+their expiry date, and they win over anything you paste by hand into `.env`.
 
 ```bash
-jobbot cookies         # qué sesiones hay y cuánto les queda
-jobbot check-sources   # prueba cada fuente y dice cuántas devuelve
+jobbot cookies         # which sessions exist and how long they have left
+jobbot check-sources   # tries every source and reports how many it returns
 ```
 
-`jobbot cookies` nunca imprime el valor de una cookie, solo su estado.
+`jobbot cookies` never prints the value of a cookie, only its state.
 
-Si prefieres no guardar contraseñas en un fichero, deja `*_USER` y
-`*_PASSWORD` vacíos y usa `jobbot login` sin `--auto`. Funciona igual, solo
-que entras tú.
+If you would rather not keep passwords in a file, leave `*_USER` and
+`*_PASSWORD` empty and use `jobbot login` without `--auto`. It works the same,
+you just sign in yourself.
 
-### Dónde se guarda todo esto
+### Where all of this is stored
 
-`data/` contiene el historial, las cookies y el perfil del navegador con tus
-cuentas abiertas. Copiar esa carpeta equivale a copiar tus sesiones: quien la
-tenga entra sin contraseña y sin segundo factor. Está entera en `.gitignore`.
+`data/` holds the history, the cookies and the browser profile with your
+accounts signed in. Copying that folder is the same as copying your sessions:
+whoever has it gets in with no password and no second factor. The whole folder
+is in `.gitignore`.
 
-Consecuencia práctica para el cron: **las fuentes con sesión no funcionan bien
-en GitHub Actions**. El runner sale por una IP de centro de datos que sí
-dispara verificación por email, y el perfil del navegador no sobrevive entre
-ejecuciones. Dos opciones sensatas:
+The practical consequence for scheduling: **the sources that need a session do
+not work well on GitHub Actions**. The runner comes out of a data-centre IP,
+which does trigger email verification, and the browser profile does not survive
+between runs. Two sensible options:
 
-- Dejar en Actions solo lo que no necesita cuenta, que es la mayoría: Manfred,
-  LinkedIn de invitado, Tecnoempleo, RemoteOK y We Work Remotely.
-- O ejecutar todo en tu máquina con el Programador de tareas, que es donde tus
-  sesiones valen.
+- Leave only what needs no account on Actions, which is most of it: Manfred,
+  guest LinkedIn, Tecnoempleo, RemoteOK and We Work Remotely.
+- Or run everything on your own machine, which is where your sessions count.
 
-### Sobre InfoJobs
+### About InfoJobs
 
-Devolvió ofertas en la primera pasada y dejó de hacerlo después de encadenar
-varias búsquedas: sirve una página de 29 KB sin tarjetas en vez de un 403, y
-tarda un buen rato en soltar la IP. El parser está testeado contra su HTML
-real, así que cuando responde funciona.
+It returned postings on the first pass and stopped after a few searches in a
+row: it serves a 29 KB page with no cards instead of a 403, and it takes a good
+while to release the IP. The parser is tested against its real HTML, so when it
+answers, it works.
 
-Mitigaciones ya aplicadas: solo dos consultas amplias (`python`, `backend`) en
-vez de las seis generales, y 1,5 s entre peticiones al mismo dominio. Desde una
-IP doméstica normal, con el bot corriendo cada 4 horas, debería ir bien; si ves
-`infojobs 0` una y otra vez, súbele el intervalo o déjale una sola consulta.
+Mitigations already in place: only two broad queries (`python`, `backend`)
+instead of the six general ones, and 1.5 s between requests to the same domain.
+From a normal home IP, with the bot running every 4 hours, it should be fine;
+if you keep seeing `infojobs 0`, raise the interval or leave it a single query.
 
-### Sobre Glassdoor
+### About Glassdoor
 
-El parser funciona y está testeado, pero Glassdoor devuelve 403 tras unas pocas
-peticiones desde la misma IP. Está en `config.yaml` con `enabled: false`.
-Enciéndela si sales por otra IP o si te da igual que falle a menudo.
+The parser works and is tested, but Glassdoor returns 403 after a few requests
+from the same IP. It is in `config.yaml` with `enabled: false`. Turn it on if
+you come out of a different IP or if you do not mind it failing often.
 
-### Sobre Otta
+### About Otta
 
-Otta es ahora Welcome to the Jungle, y tiene dos barreras encima:
+Otta is now Welcome to the Jungle, and it has two barriers on top:
 
 ```
 x-amzn-waf-action: challenge
 ```
 
-Un reto de AWS WAF que solo se pasa ejecutando JavaScript, y un listado de
-ofertas que está detrás del alta de cuenta: el botón "find a job" lleva a
-`/en/get-started/job-title`, no a resultados.
+An AWS WAF challenge that is only passed by executing JavaScript, and a listing
+that sits behind sign-up: the "find a job" button leads to
+`/en/get-started/job-title`, not to results.
 
-Por eso copiar la cookie a mano no sirve aquí. Comprobado: el token de WAF que
-acompaña a la sesión caducaba en poco más de una hora. Lo que sí funciona es
-el modo navegador, que resuelve el reto solo y mantiene la sesión viva:
+That is why copying the cookie by hand is no use here. Measured: the WAF token
+that accompanies the session expired in little over an hour. What does work is
+browser mode, which solves the challenge on its own and keeps the session
+alive:
 
 ```bash
 pip install -e ".[browser]"
 playwright install chromium
 jobbot login otta
-# y en config.yaml: sources.otta.enabled: true
+# and in config.yaml: sources.otta.enabled: true
 ```
 
-**Aviso importante sobre Otta.** Su botón de siguiente no es un "ver la
-siguiente oferta": marca la actual como vista y la saca de tus matches. El bot
-navega con tu sesión, así que consume tu cola igual que si la recorrieras tú.
-Las ofertas te llegan por Telegram con su enlace, pero ya no las verás al
-entrar en la web de Otta.
+**An important warning about Otta.** Its next button is not a "show me the next
+posting": it marks the current one as seen and removes it from your matches.
+The bot browses with your session, so it consumes your queue exactly as if you
+had walked it yourself. The postings reach you on Telegram with their link, but
+you will not see them again when you open Otta.
 
-Es la única fuente con este efecto; las otras seis solo leen. Si prefieres
-revisar Otta a mano, baja `sources.otta.max_jobs` a 5 para que quede cola, o
-ponla en `enabled: false`.
+It is the only source with this effect; the others only read. If you would
+rather review Otta by hand, lower `sources.otta.max_jobs` to 5 so a queue is
+left, or set it to `enabled: false`.
 
-Verificado que el navegador entra y devuelve 598 KB de contenido real donde
-`httpx` recibía una página de 2 KB. Lo que **no** he podido verificar es el
-parseo del listado logueado, porque hace falta tu cuenta. Si `check-sources`
-te da 0 en Otta, el listado estará en otra ruta: ponla en
+Verified that the browser gets in and returns 598 KB of real content where
+`httpx` received a 2 KB page. What has **not** been verified is parsing the
+signed-in listing, because that needs your account. If `check-sources` gives
+you 0 on Otta, the listing will be at a different path: set it in
 `sources.otta.search_url`.
 
-Queda también el modo Algolia, apuntando al buscador que usa su propia web
-(`algolia_app_id` y `algolia_api_key` en `config.yaml`), pero esas claves rotan
-y hay que renovarlas a mano. RemoteOK y We Work Remotely cubren el mismo hueco
-de remoto internacional sin ningún mantenimiento.
+There is also an Algolia mode, pointing at the search their own site uses
+(`algolia_app_id` and `algolia_api_key` in `config.yaml`), but those keys rotate
+and have to be renewed by hand. RemoteOK and We Work Remotely cover the same
+international-remote gap with no maintenance at all.
 
 ---
 
-## Cómo decide qué mandarte
+## How it decides what to send you
 
-Cuatro filtros en orden, del más barato al más caro:
+Four filters in order, cheapest first:
 
-1. **Filtros duros** (`config.yaml`, sección `exclude`). Descartan sin discutir:
-   junior o becario en el título, presencial obligatorio, salario por debajo del
-   mínimo, oferta caducada, ninguna tecnología del perfil, o un título de otro
-   perfil (`Senior .NET Full-stack`, `React Native Developer`) que no nombre
-   Python, Node o backend.
+1. **Hard filters** (`config.yaml`, the `exclude` section). They drop a posting
+   with no argument: junior or intern in the title, on-site required, salary
+   below the minimum, an expired posting, no technology from the profile, or a
+   title from another field (`Senior .NET Full-stack`, `React Native
+   Developer`) that does not also name Python, Node or backend.
 
-2. **Deduplicación**. La misma oferta en LinkedIn y en InfoJobs colapsa en una:
-   la huella normaliza empresa y puesto, quitando sufijos societarios, ciudades
-   y coletillas de modalidad. Segunda huella por URL canónica para los reposts.
+2. **Deduplication**. The same posting on LinkedIn and on InfoJobs collapses
+   into one: the fingerprint normalises company and role, stripping corporate
+   suffixes, cities and work-mode tags. A second fingerprint by canonical URL
+   catches reposts.
 
-3. **Scoring por reglas**, sobre 100 puntos repartidos así:
+3. **Rule-based scoring**, over 100 points split like this:
 
-   | Bloque | Peso |
+   | Block | Weight |
    |---|---|
-   | Stack coincidente | 45 |
-   | Salario | 25 |
-   | Modalidad | 20 |
+   | Matching stack | 45 |
+   | Salary | 25 |
+   | Work mode | 20 |
    | Seniority | 10 |
 
-   El resultado se convierte a una nota del 1 al 10. Es una función pura, sin
-   red ni estado: misma oferta, misma nota.
+   The result is mapped to a score from 1 to 10. It is a pure function, with no
+   network and no state: same posting, same score.
 
-El bot también lee cuánta gente ha solicitado ya, cuando la fuente lo publica.
-LinkedIn lo pone en la ficha. Llegar de los primeros suma puntos y una cola de
-doscientos resta, porque la misma oferta no vale lo mismo con 6 candidatos que
-con 200. Si quieres el equivalente al filtro de "menos de 10 solicitantes",
-pon un número en `exclude.max_applicants`; viene vacío porque solo LinkedIn da
-el dato y un tope dejaría en desventaja a las demás fuentes.
+   The bot also reads how many people have already applied, when the source
+   publishes it. LinkedIn shows it on the posting. Being among the first adds
+   points and a queue of two hundred subtracts, because the same posting is not
+   worth the same with 6 candidates as with 200. If you want the equivalent of
+   the "fewer than 10 applicants" filter, put a number in
+   `exclude.max_applicants`; it ships empty because only LinkedIn reports it and
+   a cap would penalise every other source.
 
-4. **Segunda opinión de Claude**, solo para las que ya pasaron el corte. Devuelve
-   la nota final y la frase de "por qué encaja" que ves en Telegram. Va en lotes
-   de seis ofertas por llamada y con tope por ejecución
-   (`scoring.llm_max_offers_per_run`), en lotes de seis ofertas por llamada.
+4. **A second opinion from Claude**, only for the ones that already passed the
+   cut. It returns the final score and the "why it fits" line you see in
+   Telegram. It goes in batches of six postings per call, with a per-run cap in
+   `scoring.llm_max_offers_per_run`.
 
-El salario mínimo está en 40.000 € y el objetivo en 50.000 €: por debajo del
-mínimo se descarta, y a partir del objetivo el bloque de salario puntúa al
-máximo. Las ofertas sin salario publicado se aceptan pero puntúan menos, porque
-si no te quedas casi sin nada.
-
----
-
-## Coste
-
-El scraping y el scoring por reglas son gratis. Lo único que cuesta es Claude,
-que se usa en dos sitios:
-
-- **Puntuar** las ofertas que pasaron el corte, en lotes de seis. Con los topes
-  de `config.yaml` son 2 o 3 llamadas por ejecución.
-- **Escribir** una cover letter y un summary, solo cuando se lo pides tú.
-
-Con `claude-opus-5` a 5 $/M de entrada y 25 $/M de salida, una ejecución sale
-por céntimos. `jobbot run --no-llm` lo deja a cero.
-
-No hace falta estimarlo a ojo: el bot apunta cada llamada y `jobbot usage`, o
-`/usage` en Telegram, te da el gasto de hoy, del mes y total, más el desglose
-entre puntuar ofertas y escribir candidaturas. Guarda el importe calculado en
-el momento de la llamada, así que un cambio de precios no reescribe el pasado.
+The salary floor and target ship as example values in `config.yaml` and are
+overridden from `.env` (see [Tuning the criteria](#tuning-the-criteria)). Below
+the floor a posting is dropped; from the target up, the salary block scores
+full marks. Postings with no published salary are accepted but score lower,
+because otherwise you would be left with almost nothing.
 
 ---
 
-## Ejecución periódica
+## Cost
 
-El propio bot la lleva. Mientras `jobbot bot` está escuchando, lanza la
-búsqueda cada 4 horas por su cuenta. Se configura en `config.yaml`:
+The scraping and the rule-based scoring are free. The only thing that costs
+money is Claude, used in two places:
+
+- **Scoring** the postings that passed the cut, in batches of six. With the
+  caps in `config.yaml` that is 2 or 3 calls per run.
+- **Writing** a cover letter and a summary, only when you ask for it.
+
+With `claude-opus-5` at $5/M input and $25/M output, a run costs cents.
+`jobbot run --no-llm` makes it zero.
+
+There is no need to estimate it: the bot records every call and `jobbot usage`,
+or `/usage` in Telegram, gives you today's spend, this month's and the total,
+plus the split between scoring postings and writing applications. It stores the
+amount as computed at call time, so a price change does not rewrite the past.
+
+---
+
+## Running it on a schedule
+
+The bot handles that itself. While `jobbot bot` is listening, it launches a
+search every 4 hours on its own. It is configured in `config.yaml`:
 
 ```yaml
 schedule:
@@ -392,172 +396,194 @@ schedule:
   first_run_after_minutes: 3
 ```
 
-Un solo proceso, y eso importa más de lo que parece: los botones de las
-alertas solo responden si el bot está vivo, así que atar las búsquedas a ese
-mismo proceso garantiza que nunca recibas una alerta con botones muertos.
-`/proxima` te dice cuándo toca la siguiente.
+One single process, and that matters more than it looks: the buttons on the
+alerts only respond while the bot is alive, so tying the searches to that same
+process guarantees you never get an alert with dead buttons. `/proxima` tells
+you when the next one is due.
 
-En Windows, un acceso directo en la carpeta de Inicio lo arranca al encender.
-El lanzador se relanza solo si el proceso se cae.
+On Windows, a shortcut in the Startup folder launches it when you turn the
+computer on. The launcher restarts itself if the process dies.
 
-La alternativa era una tarea programada llamando a `jobbot run`. Funciona,
-pero son dos cosas que mantener vivas en vez de una, y el `.bat` termina en
-`pause` para que puedas leer el resumen al ejecutarlo a mano, lo que deja una
-ventana abierta en cada disparo automático.
+The alternative was a scheduled task calling `jobbot run`. It works, but it is
+two things to keep alive instead of one, and the `.bat` ends in `pause` so you
+can read the summary when running it by hand, which leaves a window open on
+every automatic trigger.
 
-`.github/workflows/job-search.yml` existe pero **con el cron desactivado**, solo
-disparo manual. La razón es que dos fuentes dependen de tu máquina: Otta usa el
-perfil de navegador con tu sesión, que no sobrevive entre ejecuciones de un
-runner, e InfoJobs corta las IPs de centro de datos. Si aun así lo quieres en
-Actions, descomenta el `schedule`, añade los tres secrets (`TELEGRAM_BOT_TOKEN`,
-`TELEGRAM_CHAT_ID`, `ANTHROPIC_API_KEY`) y cuenta con perder esas dos fuentes.
+`.github/workflows/job-search.yml` exists but **with the cron disabled**, manual
+trigger only. The reason is that two sources depend on your machine: Otta uses
+the browser profile holding your session, which does not survive between runner
+executions, and InfoJobs blocks data-centre IPs. If you want it on Actions
+anyway, uncomment the `schedule`, add the three secrets
+(`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `ANTHROPIC_API_KEY`) and accept
+losing those two sources.
 
-El historial de SQLite viaja en la caché del runner. Si se pierde, la primera
-pasada repite ofertas que ya viste una vez y luego vuelve a la normalidad.
+The SQLite history travels in the runner cache. If it is lost, the first pass
+repeats postings you have already seen once and then returns to normal.
 
 ---
 
-## Estructura
+## Structure
 
-Arquitectura hexagonal, la misma que usas en AscendGate:
+Hexagonal architecture, ports and adapters:
 
 ```
 src/jobbot/
-  domain/          reglas puras: modelos, salario, huella, scoring, perfil
-  ports.py         qué necesita el dominio del exterior
+  domain/          pure rules: models, salary, fingerprint, scoring, profile
+  ports.py         what the domain needs from outside
   adapters/
-    sources/       una clase por portal, todas tras la misma interfaz
-    http.py        cliente compartido con throttle por dominio y reintentos
-    persistence.py historial en SQLite
+    sources/       one class per job board, all behind the same interface
+    http.py        shared client with per-domain throttling and retries
+    persistence.py history in SQLite
     telegram_notifier.py
-    llm/           Claude: scoring y redacción
-    offer_reader.py  URL suelta → oferta (modo manual)
-  application/     casos de uso: buscar, redactar
-  container.py     raíz de composición
-  bot.py           comandos de Telegram
-  cli.py           línea de comandos
+    llm/           Claude: scoring and writing
+    offer_reader.py  a bare URL -> a posting (manual mode)
+  application/     use cases: search, write
+  container.py     composition root
+  bot.py           Telegram commands
+  cli.py           command line
 ```
 
-El dominio no importa nada de `adapters`. Los tests de `domain` y `application`
-corren sin red.
+The domain imports nothing from `adapters`. The `domain` and `application`
+tests run with no network.
 
 ---
 
-## Comandos de desarrollo
+## Development commands
 
-Están en el `Makefile`, así que la CI ejecuta exactamente lo mismo que tú:
+They live in the `Makefile`, so CI runs exactly what you run:
 
 ```bash
-make install-dev   # instala el bot y las herramientas
-make check         # lint + tipos + formato + tests + carga de configuración
-make dry-run       # una búsqueda que no manda nada ni gasta en LLM
-make bot           # arranca el bot escuchando en Telegram
-make help          # el resto
+make install-dev   # installs the bot and the tooling
+make check         # lint + types + format + tests + config loading
+make dry-run       # a search that sends nothing and spends nothing on the LLM
+make bot           # starts the bot listening on Telegram
+make help          # everything else
 ```
 
-En Windows no viene `make`. Se instala con `winget install GnuWin32.Make`, o
-puedes copiar el comando de la receta que necesites.
+Windows does not ship `make`. Install it with `winget install GnuWin32.Make`,
+or copy the recipe you need by hand.
 
 ---
 
 ## Tests
 
-Los ejecuta también la CI en cada push y en cada pull request, con Python
-3.11 y 3.12, junto a `ruff check`, `flake8`, `mypy` y `black --check`. No hacen
-falta secretos: ninguna prueba toca la red.
+CI runs them on every push and every pull request, on Python 3.11 and 3.12,
+alongside `ruff check`, `flake8`, `mypy` and `black --check`. No secrets are
+needed: no test touches the network.
 
-El formateador de referencia es Black. `ruff format` no se usa: discrepa con
-Black en los literales multilínea y dos formateadores acaban reescribiéndose
-el código el uno al otro.
+Black is the formatter of record. `ruff format` is not used: it disagrees with
+Black on multiline literals, and two formatters end up rewriting each other's
+code.
 
 ```bash
 pip install -r requirements-dev.txt
 pytest
 ```
 
-52 tests, todos sin red. Los parsers se prueban contra fixtures copiados del
-HTML real de cada portal, incluidos los casos raros: el salario de InfoJobs
-partido por comentarios HTML, el "Salario:35000 a 38000" pegado de Tecnoempleo,
-y el aviso legal que RemoteOK cuela como primer elemento del array.
+111 tests, all offline. The parsers are tested against fixtures copied from
+each board's real HTML, odd cases included: the InfoJobs salary split by HTML
+comments, Tecnoempleo's run-together "Salario:35000 a 38000", and the legal
+notice RemoteOK slips in as the first array item.
 
-Aviso honesto: estos tests validan la lógica de parseo, no que el portal siga
-sirviendo ese HTML. Cuando un portal cambia el marcado, los tests siguen verdes
-y la fuente devuelve cero. Por eso el resumen de cada pasada desglosa por fuente.
+An honest warning: these tests validate the parsing logic, not that the board
+still serves that HTML. When a board changes its markup the tests stay green
+and the source returns zero. That is why the summary of each pass breaks the
+numbers down by source.
 
-### Qué está verificado contra los servicios reales y qué no
+### What is verified against the real services and what is not
 
-Verificado con peticiones en vivo: las seis fuentes activas (94 ofertas en una
-pasada), la deduplicación entre portales, el scoring y el historial en SQLite.
+Verified with live requests: the enabled sources, deduplication across boards,
+the scoring and the SQLite history.
 
-Sin verificar, porque hacen falta credenciales que no están puestas: las
-llamadas a la API de Claude (`scoring.use_llm`, `jobbot apply`, `/carta`,
-`/summary`) y la entrega real de mensajes de Telegram. El código está escrito
-contra la API de Mensajes con salidas estructuradas y contra python-telegram-bot
-v21, y ambos caminos están cubiertos por tests con dobles, pero la primera vez
-que pongas las claves conviene probar con `jobbot apply <url>` antes de dejarlo
-en el cron.
-
----
-
-## Ajustar el criterio
-
-Casi todo está en `config.yaml`:
-
-- `salary.minimum` y `salary.target`, si cambias de idea sobre el suelo. Ojo:
-  los valores del YAML son un ejemplo, porque este fichero se publica. Los
-  tuyos van en `.env`, con `JOBBOT_SALARY_MINIMUM` y `JOBBOT_SALARY_TARGET`,
-  que mandan sobre el YAML. El mínimo se compara contra el **techo** de la
-  banda, así que una oferta de "35.000 - 53.000" entra aunque tu mínimo sean
-  40.000.
-- `keywords.weighted`, para subir o bajar el peso de una tecnología.
-- `exclude.off_profile_titles`, si se cuela algún tipo de puesto que no quieres.
-- `scoring.notify_threshold`, si te llegan demasiadas o demasiado pocas.
-- `sources.<nombre>.queries`, para darle a un portal frágil menos búsquedas.
-
-Y en `profile/cv.yaml` está lo que ve Claude al escribir: el summary actual, la
-experiencia con sus highlights, y `emphasis_rules`, que decide qué empresa sale
-en primer plano según lo que pida la oferta. Si actualizas el CV en docx,
-actualiza también ese fichero.
+Not verified, because it needs credentials that are not committed: the calls to
+the Claude API (`scoring.use_llm`, `jobbot apply`, `/carta`, `/summary`) and the
+actual delivery of Telegram messages. The code is written against the Messages
+API with structured outputs and against python-telegram-bot v21, and both paths
+are covered by tests with doubles, but the first time you add the keys it is
+worth trying `jobbot apply <url>` before leaving it on a schedule.
 
 ---
 
-## Usarlo con tu perfil
+## Tuning the criteria
 
-El bot no está atado a un perfil de backend. Lo que define "qué es una buena
-oferta" vive entero en dos ficheros de datos, y ninguno de los dos toca código:
+Almost everything is in `config.yaml`:
 
-| Fichero | Qué decide |
+- `salary.minimum` and `salary.target`, if you change your mind about the
+  floor. Careful: the values in the YAML are an example, because this file is
+  published. Yours go in `.env`, as `JOBBOT_SALARY_MINIMUM` and
+  `JOBBOT_SALARY_TARGET`, which override the YAML. The minimum is compared
+  against the **top** of the band, so a posting of "35.000 - 53.000" gets in
+  even when your floor is 40.000.
+- `keywords.weighted`, to raise or lower the weight of a technology.
+- `exclude.off_profile_titles`, when a kind of role you do not want slips in.
+- `scoring.notify_threshold`, if you get too many or too few.
+- `sources.<name>.queries`, to give a fragile board fewer searches.
+
+And `profile/cv.yaml` holds what Claude sees when it writes: the current
+summary, the experience with its highlights, and `emphasis_rules`, which decides
+which company comes to the front depending on what the posting asks for. If you
+update your CV, update that file too.
+
+---
+
+## Using it with your own profile
+
+The bot is not tied to a backend profile. What defines "a good posting" lives
+entirely in data files, and none of them touches code:
+
+| File | What it decides |
 |---|---|
-| `config.yaml` | Qué se busca, qué se descarta y cuánto pesa cada tecnología |
-| `profile/cv.yaml` | Qué sabe Claude de ti al puntuar y al escribir |
-| `.env` | Lo que no quieres publicar, como tus cifras de sueldo |
+| `config.yaml` | What is searched, what is dropped and how much each technology weighs |
+| `profile/cv.yaml` | What Claude knows about you when scoring and writing |
+| `.env` | What you do not want published, such as your salary figures |
 
-Los dos se pueden apuntar a otro sitio con variables de entorno, así que puedes
-tener varios perfiles sin tocar los tuyos:
+Both files can point somewhere else through environment variables, so you can
+keep several profiles without touching yours:
 
 ```bash
 JOBBOT_CONFIG_PATH=examples/frontend/config.yaml JOBBOT_PROFILE_PATH=examples/frontend/cv.yaml jobbot run --dry-run
 ```
 
-En `examples/frontend/` hay un perfil completo de una desarrolladora frontend,
-que sirve de plantilla y de prueba de que esto funciona de verdad: con esos dos
-ficheros, una oferta de "Senior React Engineer" saca un 10 y una de "Backend
-Engineer Python" se descarta.
+`examples/frontend/` holds a complete profile for a frontend developer, which
+serves as a template and as proof that this works: with those two files, a
+"Senior React Engineer" posting scores high and a "Backend Engineer Python" one
+is rejected.
 
-Para adaptarlo a ti:
+To adapt it to you:
 
-1. **`config.yaml`**: cambia `search.queries` por las búsquedas de tu puesto,
-   `keywords.required_any` por lo que una oferta debe mencionar sí o sí, y
-   `keywords.weighted` por tus tecnologías con su peso. En `exclude`,
-   `off_profile_titles` son los puestos de otra especialidad y
-   `core_title_terms` las palabras que rescatan un título mixto.
-2. **`profile/cv.yaml`**: tu summary, tu experiencia con sus highlights, y dos
-   bloques que guían la redacción:
-   - `emphasis_rules`: qué experiencia destacar según lo que mencione la oferta.
-   - `cover_letter_anchors`: `always` es la experiencia que aparece casi
-     siempre, y cada entrada de `when` añade una regla del tipo "si la oferta
-     toca estas palabras, apóyate en esta otra".
-3. Prueba con `jobbot run --dry-run --no-llm`, que no manda nada ni gasta nada.
+1. **`config.yaml`**: change `search.queries` to the searches for your role,
+   `keywords.required_any` to what a posting must mention, and
+   `keywords.weighted` to your technologies with their weight. Under `exclude`,
+   `off_profile_titles` are the roles from another field and `core_title_terms`
+   are the words that rescue a mixed title.
+2. **`profile/cv.yaml`**: your summary, your experience with its highlights, and
+   two blocks that guide the writing:
+   - `emphasis_rules`: which experience to highlight based on what the posting
+     mentions.
+   - `cover_letter_anchors`: `always` is the experience that appears nearly
+     every time, and each `when` entry adds a rule of the form "if the posting
+     touches these words, lean on this other one".
+3. Try it with `jobbot run --dry-run --no-llm`, which sends nothing and spends
+   nothing.
 
-Los prompts se construyen a partir de ese fichero, así que las cartas hablan de
-tus empresas y de tu stack, no de los de otro.
+The prompts are built from that file, so the letters talk about your companies
+and your stack, not someone else's.
+
+---
+
+## Contributing
+
+`main` is protected: changes go through a pull request, and CI has to be green
+before it can be merged.
+
+```bash
+git checkout -b my-change
+make check
+git push origin my-change
+```
+
+---
+
+## License
+
+MIT. See [LICENSE](LICENSE).

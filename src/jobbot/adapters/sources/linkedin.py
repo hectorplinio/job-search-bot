@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 from ...domain.criteria import Criteria
 from ...domain.models import JobOffer, WorkMode
 from ...domain.salary import parse_salary
+from ...domain.scoring import title_blockers
 from .base import BaseSource, clean_text, detect_work_mode, interleave, parse_posted_at
 
 logger = logging.getLogger(__name__)
@@ -67,8 +68,24 @@ class LinkedInSource(BaseSource):
                 )
 
         unique = self._deduplicate(interleave(groups))
-        limit = criteria.search.max_results_per_source
-        return [await self._with_description(offer) for offer in unique[:limit]]
+
+        # Dropping by title before paying for the detail page: each description
+        # is one extra request. It only removes a few, but they are free to
+        # remove.
+        candidates = [offer for offer in unique if not title_blockers(offer.title, criteria)]
+
+        # LinkedIn holds far more than the general cap allows: measured, the
+        # configured searches return over 400 unique postings while the shared
+        # limit kept 40. Its own cap lives in config.yaml, because every
+        # posting kept costs one request for its description.
+        limit = int(self.options.get("max_results") or criteria.search.max_results_per_source)
+        logger.info(
+            "LinkedIn: %d unicas, %d tras filtrar por titulo, se quedan %d",
+            len(unique),
+            len(candidates),
+            min(limit, len(candidates)),
+        )
+        return [await self._with_description(offer) for offer in candidates[:limit]]
 
     async def _search_query(
         self,
