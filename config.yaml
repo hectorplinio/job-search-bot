@@ -245,6 +245,14 @@ sources:
     enabled: true
     # 2 = remote, 3 = hybrid, 1 = on-site
     workplace_types: ["2", "3"]
+    # The guest endpoint serves 10 results per request. Measured across the
+    # configured searches: 3 pages give 238 unique postings, 10 pages give 604,
+    # and every page still comes back full. The bottleneck is not the listing.
+    pages: 5
+    # LinkedIn's own cap, above the shared one, because it has far more to give.
+    # Each posting kept costs one extra request for its description, so this is
+    # the number that sets how long the source takes.
+    max_results: 100
     # "Easy Apply" only, the equivalent of LinkedIn's own filter. You apply
     # without leaving LinkedIn, but it leaves out many good postings that use
     # their own ATS. That is why it is off.

@@ -284,6 +284,71 @@ async def test_linkedin_pagina_hasta_agotar(criteria) -> None:
     assert len(offers) == 11
 
 
+async def test_linkedin_tiene_su_propio_tope(criteria) -> None:
+    """The shared cap of 40 threw away most of what LinkedIn has: measured, the
+    configured searches return over 400 unique postings. Its own cap lives in
+    the source options."""
+
+    class HttpLleno(FakeHttp):
+        def __init__(self) -> None:
+            super().__init__({})
+            self.fichas = 0
+
+        async def get_text(self, url: str, **kwargs) -> str:
+            if "seeMoreJobPostings" in url:
+                start = int((kwargs.get("params") or {}).get("start", 0))
+                return "".join(
+                    LINKEDIN_CARD.replace("4439920031", str(4439920000 + start + n))
+                    for n in range(10)
+                )
+            self.fichas += 1
+            return LINKEDIN_DETAIL
+
+    criteria.search.queries = ["python"]
+    criteria.search.locations = ["Spain"]
+    criteria.search.max_results_per_query = 50
+    criteria.search.max_results_per_source = 40
+
+    http = HttpLleno()
+    offers = await LinkedInSource(http, {"pages": 5, "max_results": 35}).search(criteria)
+    assert len(offers) == 35
+    # One request per description: that is what the cap is really limiting.
+    assert http.fichas == 35
+
+    # Without the override it falls back to the shared cap.
+    http = HttpLleno()
+    offers = await LinkedInSource(http, {"pages": 5}).search(criteria)
+    assert len(offers) == 40
+
+
+async def test_linkedin_descarta_por_titulo_antes_de_pedir_la_ficha(criteria) -> None:
+    """Every description is one extra request, so a title that is already
+    rejected must not cost one."""
+    tarjetas = LINKEDIN_CARD + LINKEDIN_CARD.replace("4439920031", "4439920099").replace(
+        "Backend Developer (Python)", "Junior Frontend Developer"
+    )
+
+    class HttpDos(FakeHttp):
+        def __init__(self) -> None:
+            super().__init__({})
+            self.fichas = 0
+
+        async def get_text(self, url: str, **kwargs) -> str:
+            if "seeMoreJobPostings" in url:
+                return tarjetas
+            self.fichas += 1
+            return LINKEDIN_DETAIL
+
+    criteria.search.queries = ["python"]
+    criteria.search.locations = ["Spain"]
+
+    http = HttpDos()
+    offers = await LinkedInSource(http, {"pages": 1}).search(criteria)
+
+    assert len(offers) == 1
+    assert http.fichas == 1
+
+
 REMOTIVE_PAYLOAD = {
     "jobs": [
         {
