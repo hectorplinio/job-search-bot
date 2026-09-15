@@ -120,15 +120,15 @@ class TelegramNotifier:
                 # Telegram says exactly how long to wait. Obeying it is the
                 # difference between receiving 40 postings and receiving 25.
                 espera = float(getattr(exc, "retry_after", 5)) + 0.5
-                logger.warning("Telegram pide esperar %.1fs; reintento %s", espera, intento + 1)
+                logger.warning("Telegram asks to wait %.1fs; retry %s", espera, intento + 1)
                 await asyncio.sleep(espera)
             except TelegramError:
-                logger.exception("No se pudo enviar %s", what)
+                logger.exception("Could not send %s", what)
                 return False
             else:
                 return True
 
-        logger.error("Telegram sigue limitando; %s no se envio", what)
+        logger.error("Telegram is still rate limiting; %s was not sent", what)
         return False
 
     async def send_offer(self, scored: ScoredOffer) -> None:

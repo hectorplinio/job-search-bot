@@ -48,7 +48,7 @@ class TecnoempleoSource(BaseSource):
         try:
             html = await self.http.get_text(SEARCH_URL, params={"te": query})
         except Exception:  # noqa: BLE001
-            logger.debug("Tecnoempleo fallo con la query %r", query)
+            logger.debug("Tecnoempleo failed on query %r", query)
             return []
 
         soup = BeautifulSoup(html, "lxml")

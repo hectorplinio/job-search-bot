@@ -36,7 +36,7 @@ class HimalayasSource(BaseSource):
     async def search(self, criteria: Criteria) -> list[JobOffer]:
         rows = await self._fetch_pages(int(self.options.get("pages", DEFAULT_PAGES)))
         if not rows:
-            logger.info("Himalayas no devolvio ofertas")
+            logger.info("Himalayas returned no postings")
             return []
 
         terms = criteria.keywords.required_any
@@ -54,7 +54,7 @@ class HimalayasSource(BaseSource):
 
         if fuera_de_alcance:
             logger.info(
-                "Himalayas: %s ofertas no admiten candidatos desde Espana", fuera_de_alcance
+                "Himalayas: %s postings do not accept candidates from Spain", fuera_de_alcance
             )
         return offers[: criteria.search.max_results_per_source]
 
@@ -67,7 +67,7 @@ class HimalayasSource(BaseSource):
             try:
                 payload = await self.http.get_json(API_URL, params=params)
             except Exception:  # noqa: BLE001 - one failed page does not void the others
-                logger.debug("Himalayas fallo en el offset %s", numero * PAGE_SIZE)
+                logger.debug("Himalayas failed at offset %s", numero * PAGE_SIZE)
                 break
 
             pagina = payload.get("jobs") if isinstance(payload, dict) else None

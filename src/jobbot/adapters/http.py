@@ -98,11 +98,11 @@ class HttpClient:
                     response = await self._client.get(url, params=params, headers=headers)
                 except httpx.HTTPError as exc:
                     last_error = exc
-                    logger.debug("GET %s fallo (%s), intento %s", url, exc, attempt + 1)
+                    logger.debug("GET %s failed (%s), attempt %s", url, exc, attempt + 1)
                 else:
                     if response.status_code in RETRYABLE_STATUS:
                         last_error = HttpError(f"{response.status_code} en {url}")
-                        logger.debug("GET %s -> %s, reintentando", url, response.status_code)
+                        logger.debug("GET %s -> %s, retrying", url, response.status_code)
                     elif response.status_code >= 400:
                         raise HttpError(f"{response.status_code} en {url}")
                     else:

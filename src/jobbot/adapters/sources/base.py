@@ -242,10 +242,10 @@ class BaseSource(ABC):
         try:
             offers = await self.search(criteria)
         except Exception:  # noqa: BLE001 - one broken source must not stop the others
-            logger.exception("La fuente %s fallo; se ignora en esta ejecucion", self.name)
+            logger.exception("Source %s failed; skipping it on this run", self.name)
             return []
-        session = " (con sesion)" if self.has_session else ""
-        logger.info("%s%s: %s ofertas", self.name, session, len(offers))
+        session = " (with session)" if self.has_session else ""
+        logger.info("%s%s: %s postings", self.name, session, len(offers))
         return offers
 
     def _deduplicate(self, offers: list[JobOffer]) -> list[JobOffer]:

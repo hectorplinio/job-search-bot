@@ -78,7 +78,7 @@ class AnthropicWriter:
                 operation,
             )
         except Exception:  # noqa: BLE001 - bookkeeping, not the task itself
-            logger.warning("No pude apuntar el gasto de la llamada", exc_info=True)
+            logger.warning("Could not record the cost of the call", exc_info=True)
 
     async def rate(
         self,
@@ -127,7 +127,7 @@ class AnthropicWriter:
                 output_format=RatingBatch,
             )
         except anthropic.APIError:
-            logger.exception("Claude fallo puntuando un lote; se usan las notas por reglas")
+            logger.exception("Claude failed scoring a batch; falling back to the rule scores")
             return fallback
 
         self._record(response, "puntuar ofertas")
