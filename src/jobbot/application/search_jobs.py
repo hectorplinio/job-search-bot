@@ -181,7 +181,9 @@ class SearchJobs:
             # A dry run must leave no trace: if it saved, the next real run
             # would treat these postings as already seen and none of them
             # would ever reach you.
-            logger.info("dry-run: %s ofertas se habrian enviado (historial intacto)", len(alerts))
+            logger.info(
+                "dry-run: %s postings would have been sent (history untouched)", len(alerts)
+            )
             return
 
         # Everything is stored unmarked, and what to send is then decided by

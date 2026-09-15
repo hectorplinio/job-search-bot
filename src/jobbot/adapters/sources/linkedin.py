@@ -49,8 +49,8 @@ class LinkedInSource(BaseSource):
             # your account can cost you the account, and the one that gains
             # least from it.
             logger.warning(
-                "LinkedIn va con tu sesion. El endpoint de invitado ya devuelve "
-                "los mismos resultados sin arriesgar el perfil; ver README."
+                "LinkedIn is using your session. The guest endpoint already returns "
+                "the same results without risking your profile; see README."
             )
         workplace_types = self.options.get("workplace_types") or ["2", "3"]
         window = self._time_window(criteria.search.max_age_days)
@@ -80,7 +80,7 @@ class LinkedInSource(BaseSource):
         # posting kept costs one request for its description.
         limit = int(self.options.get("max_results") or criteria.search.max_results_per_source)
         logger.info(
-            "LinkedIn: %d unicas, %d tras filtrar por titulo, se quedan %d",
+            "LinkedIn: %d unique, %d after the title filter, keeping %d",
             len(unique),
             len(candidates),
             min(limit, len(candidates)),
@@ -141,7 +141,7 @@ class LinkedInSource(BaseSource):
         try:
             html = await self.http.get_text(SEARCH_URL, params=params, headers=self.auth_headers())
         except Exception:  # noqa: BLE001 - one failed query does not invalidate the rest
-            logger.debug("LinkedIn rechazo la query %r en %r", query, location)
+            logger.debug("LinkedIn rejected query %r in %r", query, location)
             return []
 
         soup = BeautifulSoup(html, "lxml")
@@ -201,7 +201,7 @@ class LinkedInSource(BaseSource):
                 DETAIL_URL.format(job_id=job_id), headers=self.auth_headers()
             )
         except Exception:  # noqa: BLE001
-            logger.debug("Sin ficha para LinkedIn %s", job_id)
+            logger.debug("No detail page for LinkedIn %s", job_id)
             return offer
 
         soup = BeautifulSoup(html, "lxml")

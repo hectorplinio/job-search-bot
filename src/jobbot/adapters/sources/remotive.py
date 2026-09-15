@@ -34,7 +34,7 @@ class RemotiveSource(BaseSource):
         payload = await self.http.get_json(API_URL, params=params)
         rows = payload.get("jobs") if isinstance(payload, dict) else None
         if not rows:
-            logger.info("Remotive no devolvio ofertas")
+            logger.info("Remotive returned no postings")
             return []
 
         terms = criteria.keywords.required_any
@@ -50,7 +50,9 @@ class RemotiveSource(BaseSource):
             offers.append(self._to_offer(row))
 
         if fuera_de_alcance:
-            logger.info("Remotive: %s ofertas no admiten candidatos desde Espana", fuera_de_alcance)
+            logger.info(
+                "Remotive: %s postings do not accept candidates from Spain", fuera_de_alcance
+            )
 
         offers.sort(key=lambda offer: offer.posted_at or date.min, reverse=True)
         return offers[: criteria.search.max_results_per_source]

@@ -63,7 +63,7 @@ class GlassdoorSource(BaseSource):
             # requests. With GLASSDOOR_COOKIE in .env they stop treating you
             # as an anonymous visitor.
             hint = "" if self.has_session else " (prueba con GLASSDOOR_COOKIE en .env)"
-            logger.warning("Glassdoor rechazo %r (%s)%s", query, str(exc)[:60], hint)
+            logger.warning("Glassdoor rejected %r (%s)%s", query, str(exc)[:60], hint)
             return []
 
         soup = BeautifulSoup(html, "lxml")
@@ -73,7 +73,7 @@ class GlassdoorSource(BaseSource):
             if offer is not None:
                 offers.append(offer)
         if not offers:
-            logger.info("Glassdoor no devolvio tarjetas para %r (posible bloqueo)", query)
+            logger.info("Glassdoor returned no cards for %r (possibly blocked)", query)
         return offers[: criteria.search.max_results_per_query]
 
     def _parse_card(self, title_tag) -> JobOffer | None:

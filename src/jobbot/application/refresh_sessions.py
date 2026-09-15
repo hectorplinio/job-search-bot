@@ -110,14 +110,14 @@ class RefreshSessions:
         self, browser, page, source, portal, *, auto, headless, confirm
     ) -> bool:
         if await self._looks_logged_in(page, portal):
-            logger.info("%s: el perfil ya tenia la sesion abierta", source)
+            logger.info("%s: the profile already had the session open", source)
             return True
 
         if auto:
             credentials = self._credentials.get(source)
             if credentials is None:
                 logger.warning(
-                    "%s: pediste --auto pero faltan %s_USER y %s_PASSWORD en .env",
+                    "%s: you asked for --auto but %s_USER and %s_PASSWORD are missing from .env",
                     source,
                     source.upper(),
                     source.upper(),
@@ -130,8 +130,8 @@ class RefreshSessions:
         if headless:
             # With no window there is no way to solve a captcha or a 2FA step.
             logger.error(
-                "%s: la sesion caduco y en modo headless no puedo pedirte que entres. "
-                "Ejecuta `jobbot login %s` sin --headless.",
+                "%s: the session expired and in headless mode I cannot ask you to sign "
+                "in. Run `jobbot login %s` without --headless.",
                 source,
                 source,
             )
