@@ -30,7 +30,7 @@ from .settings import Settings
 logger = logging.getLogger(__name__)
 
 TELEGRAM_LIMIT = 3900
-SEARCH_JOB = "busqueda-periodica"
+SEARCH_JOB = "periodic-search"
 
 HELP = """\
 <b>Buscador de ofertas</b>
@@ -90,9 +90,9 @@ async def scheduled_search(context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         report = await container.search_use_case().run()
     except Exception:  # noqa: BLE001 - one failure must not kill the bot
-        logger.exception("La busqueda programada fallo; se reintenta en el proximo turno")
+        logger.exception("The scheduled search failed; it will be retried next time round")
         return
-    logger.info("Busqueda programada: %s enviadas de %s revisadas", report.notified, report.fetched)
+    logger.info("Scheduled search: %s sent out of %s reviewed", report.notified, report.fetched)
 
 
 async def next_run(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -226,7 +226,7 @@ async def _documents_for(
         )
         return
     except Exception:  # noqa: BLE001 - the bot must not die over one odd posting
-        logger.exception("Fallo generando documentos")
+        logger.exception("Failed while writing the documents")
         await message.reply_text("Algo ha fallado generando los documentos. Mira los logs.")
         return
 
@@ -298,7 +298,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         documents = await container.write_use_case().from_offer(stored.offer)
     except Exception:  # noqa: BLE001
-        logger.exception("Fallo generando documentos desde un boton")
+        logger.exception("Failed while writing the documents from a button")
         await responder("No he podido generar los documentos.")
         return
 
@@ -330,17 +330,17 @@ def build_application(settings: Settings | None = None) -> Application:
                 name=SEARCH_JOB,
             )
             logger.info(
-                "Bot listo. Buscara cada %s h; la primera en %s min.",
+                "Bot ready. It will search every %s h; the first one in %s min.",
                 horario.every_hours,
                 horario.first_run_after_minutes,
             )
         elif horario.enabled:
             logger.warning(
-                "Busqueda automatica pedida pero sin JobQueue. Instala: "
+                "Automatic search requested but there is no JobQueue. Install: "
                 'pip install "python-telegram-bot[job-queue]"'
             )
         else:
-            logger.info("Bot listo. Sin busqueda automatica (schedule.enabled: false).")
+            logger.info("Bot ready. No automatic search (schedule.enabled: false).")
 
     async def post_shutdown(_application: Application) -> None:
         await container.__aexit__(None, None, None)

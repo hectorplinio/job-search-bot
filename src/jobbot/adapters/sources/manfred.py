@@ -32,7 +32,7 @@ class ManfredSource(BaseSource):
     async def search(self, criteria: Criteria) -> list[JobOffer]:
         payload = await self.http.get_json(LIST_URL, params={"lang": "ES"})
         if not isinstance(payload, list):
-            logger.warning("Manfred devolvio un payload inesperado")
+            logger.warning("Manfred returned an unexpected payload")
             return []
 
         terms = criteria.keywords.required_any
@@ -92,7 +92,7 @@ class ManfredSource(BaseSource):
         try:
             html = await self.http.get_text(offer.url)
         except Exception:  # noqa: BLE001 - without a description the posting is still worth keeping
-            logger.debug("No se pudo leer la ficha de %s", offer.url)
+            logger.debug("Could not read the detail page for %s", offer.url)
             return offer
 
         match = _NEXT_DATA.search(html)

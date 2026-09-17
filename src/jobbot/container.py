@@ -108,7 +108,7 @@ class Container:
         if not self.settings.anthropic_api_key:
             if required:
                 self.settings.require_anthropic()
-            logger.warning("Sin ANTHROPIC_API_KEY: scoring solo por reglas")
+            logger.warning("No ANTHROPIC_API_KEY: rule-based scoring only")
             return None
         return AnthropicWriter(self.settings.anthropic_api_key, usage_log=self.usage)
 
@@ -125,13 +125,13 @@ class Container:
         try:
             nuevos = self._load_criteria()
         except Exception:  # noqa: BLE001 - a broken yaml must not stop the search
-            logger.exception("config.yaml no se puede leer; sigo con los criterios anteriores")
+            logger.exception("config.yaml cannot be read; carrying on with the previous criteria")
             return False
 
         if nuevos == self.criteria:
             return False
         self.criteria = nuevos
-        logger.info("config.yaml recargado")
+        logger.info("config.yaml reloaded")
         return True
 
     def sources(self, criteria: Criteria | None = None):

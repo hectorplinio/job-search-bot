@@ -37,7 +37,7 @@ class InfoJobsSource(BaseSource):
         try:
             html = await self.http.get_text(SEARCH_URL, params=params, headers=self.auth_headers())
         except Exception:  # noqa: BLE001
-            logger.debug("InfoJobs fallo con la query %r", query)
+            logger.debug("InfoJobs failed on query %r", query)
             return []
 
         soup = BeautifulSoup(html, "lxml")
@@ -52,8 +52,8 @@ class InfoJobsSource(BaseSource):
             # cards. Without this warning it just looks like there are no
             # postings for what you searched.
             logger.info(
-                "InfoJobs no devolvio tarjetas para %r (%s bytes). "
-                "Suele ser limitacion por IP; con INFOJOBS_COOKIE en .env va mejor.",
+                "InfoJobs returned no cards for %r (%s bytes). "
+                "Usually an IP limit; it goes better with INFOJOBS_COOKIE in .env.",
                 query,
                 len(html),
             )

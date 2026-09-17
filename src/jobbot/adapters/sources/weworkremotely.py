@@ -42,7 +42,7 @@ class WeWorkRemotelySource(BaseSource):
         try:
             xml = await self.http.get_text(url)
         except Exception:  # noqa: BLE001
-            logger.debug("No se pudo leer el feed %s", url)
+            logger.debug("Could not read the feed %s", url)
             return []
 
         soup = BeautifulSoup(xml, "xml")

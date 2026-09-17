@@ -55,7 +55,7 @@ class CookieStore:
         try:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
         except (ValueError, OSError):
-            logger.warning("No pude leer %s; lo ignoro", self.path.name)
+            logger.warning("Could not read %s; ignoring it", self.path.name)
             return {}
 
         cookies: dict[str, StoredCookie] = {}
@@ -72,7 +72,7 @@ class CookieStore:
                     ),
                 )
             except (KeyError, TypeError, ValueError):
-                logger.warning("Entrada corrupta para %s en %s", source, self.path.name)
+                logger.warning("Corrupt entry for %s in %s", source, self.path.name)
         return cookies
 
     def save(self, source: str, value: str, expires_at: datetime | None = None) -> StoredCookie:

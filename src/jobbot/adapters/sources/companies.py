@@ -44,8 +44,8 @@ class CompaniesSource(BaseSource):
         watchlist = self.options.get("watchlist") or []
         if not watchlist:
             logger.info(
-                "La fuente companies no tiene empresas que mirar. "
-                "Anadelas en sources.companies.watchlist de config.yaml."
+                "The companies source has no companies to watch. "
+                "Add them under sources.companies.watchlist in config.yaml."
             )
             return []
 
@@ -65,13 +65,13 @@ class CompaniesSource(BaseSource):
         lectores = {"greenhouse": self._read_greenhouse, "ashby": self._read_ashby}
         lector = lectores.get(ats)
         if lector is None:
-            logger.warning("No se leer bolsas de tipo %r (empresa %s)", ats, slug)
+            logger.warning("I cannot read boards of type %r (company %s)", ats, slug)
             return []
 
         try:
             ofertas = await lector(empresa, slug)
         except Exception as exc:  # noqa: BLE001 - one company being down does not void the others
-            logger.warning("No pude leer la bolsa de %s (%s)", slug, str(exc)[:70])
+            logger.warning("Could not read the board for %s (%s)", slug, str(exc)[:70])
             return []
 
         terms = criteria.keywords.required_any
@@ -83,7 +83,7 @@ class CompaniesSource(BaseSource):
         ]
         if ofertas:
             logger.info(
-                "%s: %s ofertas en su bolsa, %s aptas para ti", slug, len(ofertas), len(aptas)
+                "%s: %s postings on its board, %s eligible for you", slug, len(ofertas), len(aptas)
             )
         return aptas[: criteria.search.max_results_per_query]
 

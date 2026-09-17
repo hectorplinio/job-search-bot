@@ -118,7 +118,7 @@ class BrowserSession:
             except Exception:  # noqa: BLE001 - try the next channel
                 continue
             self.channel = channel or "chromium"
-            logger.debug("Navegador arrancado con el canal %s", self.channel)
+            logger.debug("Browser started on channel %s", self.channel)
             return self
 
         raise BrowserUnavailable(
@@ -211,7 +211,7 @@ class BrowserSession:
             await email_field.wait_for(state="visible", timeout=15_000)
             await password_field.wait_for(state="visible", timeout=5_000)
         except Exception:  # noqa: BLE001 - any failure here means "do it yourself"
-            logger.info("No encontre el formulario de login; entra a mano en la ventana.")
+            logger.info("Could not find the login form; sign in by hand in the window.")
             return False
 
         await email_field.fill(user)
@@ -221,6 +221,6 @@ class BrowserSession:
 
         content = (await page.content()).lower()
         if any(marker in content for marker in ("captcha", "recaptcha", "verificacion", "verify")):
-            logger.warning("El portal ha pedido verificacion. Resuelvela en la ventana.")
+            logger.warning("The site asked for verification. Solve it in the window.")
             return False
         return True

@@ -54,7 +54,7 @@ class OttaSource(BaseSource):
 
         profile = self.options.get("browser_profile")
         if not profile:
-            logger.warning("Otta necesita el perfil del navegador; se omite.")
+            logger.warning("Otta needs the browser profile; skipping it.")
             return []
 
         limit = min(
@@ -70,8 +70,8 @@ class OttaSource(BaseSource):
                     await self._dismiss_cookie_banner(page)
                     if "/jobs" not in page.url:
                         logger.warning(
-                            "Otta no abrio tus ofertas (acabo en %s). La sesion puede "
-                            "haber caducado: ejecuta `jobbot login otta`.",
+                            "Otta did not open your postings (it ended on %s). The session "
+                            "may have expired: run `jobbot login otta`.",
                             page.url,
                         )
                         return []
@@ -87,7 +87,7 @@ class OttaSource(BaseSource):
                 finally:
                     await page.close()
         except BrowserUnavailable as exc:
-            logger.warning("Otta necesita el navegador: %s", exc)
+            logger.warning("Otta needs the browser: %s", exc)
             return []
 
         return collected
