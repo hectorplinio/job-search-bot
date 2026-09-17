@@ -21,6 +21,11 @@ from .prompts import rating_prompt, rating_system, writing_prompt, writing_syste
 logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "claude-opus-5"
+# Scoring is classification: read a posting, compare it with the profile and
+# put a number on it. Haiku does that just as well for a fifth of the price,
+# and scoring is where almost all of the spend goes. Writing keeps Opus: the
+# cover letter is the one thing here worth paying for.
+RATING_MODEL = "claude-haiku-4-5"
 # How many postings go into a single scoring call. Bigger is cheaper, but the
 # model starts mixing them up with one another.
 RATING_BATCH_SIZE = 6
@@ -53,15 +58,17 @@ class AnthropicWriter:
         api_key: str,
         *,
         model: str = DEFAULT_MODEL,
+        rating_model: str = RATING_MODEL,
         max_tokens: int = 8000,
         usage_log=None,
     ) -> None:
         self._client = anthropic.AsyncAnthropic(api_key=api_key)
         self._model = model
+        self._rating_model = rating_model
         self._max_tokens = max_tokens
         self._usage_log = usage_log
 
-    def _record(self, response, operation: str) -> None:
+    def _record(self, response, operation: str, model: str) -> None:
         """Records the spend. It must never sink a call that already worked."""
         if self._usage_log is None:
             return
@@ -69,7 +76,7 @@ class AnthropicWriter:
             uso = response.usage
             self._usage_log.record(
                 TokenUsage(
-                    model=self._model,
+                    model=model,
                     input_tokens=getattr(uso, "input_tokens", 0) or 0,
                     output_tokens=getattr(uso, "output_tokens", 0) or 0,
                     cache_read_tokens=getattr(uso, "cache_read_input_tokens", 0) or 0,
@@ -115,7 +122,7 @@ class AnthropicWriter:
         fallback = [(rule_score, "") for _offer, rule_score in batch]
         try:
             response = await self._client.messages.parse(
-                model=self._model,
+                model=self._rating_model,
                 max_tokens=self._max_tokens,
                 system=rating_system(profile),
                 messages=[
@@ -130,7 +137,7 @@ class AnthropicWriter:
             logger.exception("Claude fallo puntuando un lote; se usan las notas por reglas")
             return fallback
 
-        self._record(response, "puntuar ofertas")
+        self._record(response, "puntuar ofertas", self._rating_model)
         parsed = response.parsed_output
         if parsed is None:
             return fallback
@@ -163,7 +170,7 @@ class AnthropicWriter:
             messages=[{"role": "user", "content": writing_prompt(offer, profile)}],
             output_format=DocumentsOutput,
         )
-        self._record(response, "escribir candidatura")
+        self._record(response, "escribir candidatura", self._model)
         parsed = response.parsed_output
         if parsed is None:
             raise RuntimeError("Claude no devolvio documentos validos para esta oferta")
