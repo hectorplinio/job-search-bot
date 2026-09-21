@@ -12,7 +12,7 @@ dynamic = ["dependencies"]
 [project.optional-dependencies]
 # Only needed for `jobbot login` and for the Otta source. The rest of the bot
 # works without it. After installing: playwright install chromium
-browser = ["playwright>=1.44"]
+browser = ["playwright>=1.63.0"]
 
 [project.scripts]
 jobbot = "jobbot.cli:app"
