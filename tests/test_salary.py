@@ -31,6 +31,12 @@ def test_extrae_rangos_habituales(text: str, expected_min: int, expected_max: in
         "Buscamos alguien con 5 años de experiencia",
         "Gestionamos 200 clientes al mes",
         "Tarifa de 45 €/hora para freelance",
+        # Capitole's perks block, as LinkedIn serves it: all on one line, with
+        # a "mensual" elsewhere that used to turn 1.200 € into 14.400 a year.
+        "Seguimiento mensual con tu equipo. 1.200 € de formación individual. "
+        "Retribución flexible (tickets restaurante).",
+        "Seguimiento mensual. 1.200 € al año para formación, eventos y certificaciones.",
+        "Reunión mensual. 1.200 €/año para tu desarrollo profesional (formaciones).",
         "",
     ],
 )

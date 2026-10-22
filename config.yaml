@@ -257,6 +257,15 @@ sources:
     # without leaving LinkedIn, but it leaves out many good postings that use
     # their own ATS. That is why it is off.
     easy_apply_only: false
+    # Companies whose whole LinkedIn board is read on every run, on top of the
+    # keyword searches. For the consultancies that publish only here: the
+    # searches miss most of their postings because LinkedIn ranks them low.
+    # These do not count against max_results.
+    #
+    # The id is the number in f_C=... when you filter LinkedIn Jobs by that
+    # company, or the organization:NNN on its company page.
+    companies:
+      - { name: "Capitole", id: "9413785" }
   tecnoempleo:
     enabled: true
     # full or partial remote work only

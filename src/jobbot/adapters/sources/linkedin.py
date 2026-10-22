@@ -67,12 +67,32 @@ class LinkedInSource(BaseSource):
                     )
                 )
 
+        # The consultancies you follow. Capitole and the like publish only on
+        # LinkedIn, and the keyword searches miss most of their postings
+        # because LinkedIn ranks them low. Reading their whole board by
+        # company id (f_C) catches them all.
+        company_groups: list[list[JobOffer]] = []
+        for company in self.options.get("companies") or []:
+            company_id = str(company.get("id") or "").strip()
+            if not company_id:
+                continue
+            for location in criteria.search.locations:
+                company_groups.append(
+                    await self._search_query(
+                        "", location, workplace_types, window, criteria, pages, company_id
+                    )
+                )
+
         unique = self._deduplicate(interleave(groups))
+        from_companies = self._deduplicate(interleave(company_groups))
 
         # Dropping by title before paying for the detail page: each description
         # is one extra request. It only removes a few, but they are free to
         # remove.
         candidates = [offer for offer in unique if not title_blockers(offer.title, criteria)]
+        company_candidates = [
+            offer for offer in from_companies if not title_blockers(offer.title, criteria)
+        ]
 
         # LinkedIn holds far more than the general cap allows: measured, the
         # configured searches return over 400 unique postings while the shared
@@ -85,7 +105,13 @@ class LinkedInSource(BaseSource):
             len(candidates),
             min(limit, len(candidates)),
         )
-        return [await self._with_description(offer) for offer in candidates[:limit]]
+        # The companies you follow do not count against that cap: you asked
+        # for them by name, so a busy day on the general searches must not
+        # push them out. Each company search is already capped per query.
+        if company_candidates:
+            logger.info("LinkedIn: %d more from the companies you follow", len(company_candidates))
+        kept = self._deduplicate(company_candidates + candidates[:limit])
+        return [await self._with_description(offer) for offer in kept]
 
     async def _search_query(
         self,
@@ -95,12 +121,13 @@ class LinkedInSource(BaseSource):
         window: str,
         criteria: Criteria,
         pages: int,
+        company_id: str | None = None,
     ) -> list[JobOffer]:
         """One search, walking its pages until they run out."""
         encontradas: list[JobOffer] = []
         for numero in range(pages):
             pagina = await self._search_once(
-                query, location, workplace_types, window, criteria, numero * PAGE_SIZE
+                query, location, workplace_types, window, criteria, numero * PAGE_SIZE, company_id
             )
             encontradas.extend(pagina)
             # An incomplete page means there are no more results.
@@ -125,15 +152,21 @@ class LinkedInSource(BaseSource):
         window: str,
         criteria: Criteria,
         start: int = 0,
+        company_id: str | None = None,
     ) -> list[JobOffer]:
-        params = {
-            "keywords": query,
+        params: dict[str, str | int] = {
             "location": location,
             "f_WT": ",".join(workplace_types),
             "f_TPR": window,
             "start": start,
             "sortBy": "DD",
         }
+        # A company search goes without keywords: it reads the company's whole
+        # board, and the rule filter decides what fits afterwards.
+        if query:
+            params["keywords"] = query
+        if company_id:
+            params["f_C"] = company_id
         # f_AL=true is "Easy Apply": you apply from LinkedIn, with no
         # third-party forms. It changes the result set.
         if self.options.get("easy_apply_only"):
