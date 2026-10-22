@@ -11,6 +11,7 @@ from datetime import timedelta
 
 from telegram import Message, Update
 from telegram.constants import ChatAction, ParseMode
+from telegram.error import NetworkError
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -33,6 +34,12 @@ TELEGRAM_LIMIT = 3900
 SEARCH_JOB = "periodic-search"
 PUBLIC_SEARCH_JOB = "periodic-public-search"
 CHECK_MAIL_JOB = "periodic-check-mail"
+
+# The bot runs on a laptop that sleeps. APScheduler drops a run that wakes up
+# late, so a night with the lid closed meant no search until the next 4 h
+# tick. With no grace limit the late run still happens, and coalesce turns a
+# pile of missed ones into a single run.
+CATCH_UP = {"misfire_grace_time": None, "coalesce": True}
 
 HELP = """\
 <b>Buscador de ofertas</b>
@@ -121,6 +128,17 @@ async def scheduled_check_replies(context: ContextTypes.DEFAULT_TYPE) -> None:
         logger.exception("The scheduled mail check failed; it will be retried next time round")
         return
     logger.info("Scheduled mail check: %s sent out of %s reviewed", report.notified, report.fetched)
+
+
+async def on_error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Without a handler, every dropped connection dumped a full traceback.
+    Network blips (waking from sleep, a wifi change) are retried by the
+    polling loop on its own, so they get one line; anything else keeps its
+    traceback."""
+    if isinstance(context.error, NetworkError):
+        logger.warning("Telegram unreachable (%s); polling retries on its own", context.error)
+        return
+    logger.error("Unhandled error in the bot", exc_info=context.error)
 
 
 async def next_run(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -384,6 +402,7 @@ def build_application(settings: Settings | None = None) -> Application:
                 interval=timedelta(hours=horario.every_hours),
                 first=timedelta(minutes=horario.first_run_after_minutes),
                 name=SEARCH_JOB,
+                job_kwargs=CATCH_UP,
             )
             logger.info(
                 "Bot ready. It will search every %s h; the first one in %s min.",
@@ -405,6 +424,7 @@ def build_application(settings: Settings | None = None) -> Application:
                 interval=timedelta(hours=publico.schedule_every_hours),
                 first=timedelta(minutes=publico.first_run_after_minutes),
                 name=PUBLIC_SEARCH_JOB,
+                job_kwargs=CATCH_UP,
             )
             logger.info(
                 "Public-sector search ready. Every %s h; the first one in %s min.",
@@ -424,6 +444,7 @@ def build_application(settings: Settings | None = None) -> Application:
                 interval=timedelta(hours=correo.schedule_every_hours),
                 first=timedelta(minutes=correo.first_run_after_minutes),
                 name=CHECK_MAIL_JOB,
+                job_kwargs=CATCH_UP,
             )
             logger.info(
                 "Mail check ready. Every %s h; the first one in %s min.",
@@ -442,6 +463,7 @@ def build_application(settings: Settings | None = None) -> Application:
     # Anthropic quota generating letters.
     only_me = filters.Chat(chat_id=int(chat_id))
 
+    application.add_error_handler(on_error)
     application.add_handler(CommandHandler(["start", "ayuda", "help"], start, filters=only_me))
     application.add_handler(CommandHandler("buscar", search_now, filters=only_me))
     application.add_handler(CommandHandler("correo", check_mail_now, filters=only_me))
