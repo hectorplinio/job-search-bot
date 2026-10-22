@@ -257,15 +257,70 @@ sources:
     # without leaving LinkedIn, but it leaves out many good postings that use
     # their own ATS. That is why it is off.
     easy_apply_only: false
-    # Companies whose whole LinkedIn board is read on every run, on top of the
-    # keyword searches. For the consultancies that publish only here: the
-    # searches miss most of their postings because LinkedIn ranks them low.
-    # These do not count against max_results.
+    # Companies searched one by one on every run, on top of the keyword
+    # searches: the IT consultancies, which publish mostly here and which the
+    # keyword searches miss because LinkedIn ranks them low. Each one is one
+    # search in company_locations with your required keywords joined by OR,
+    # and they do not count against max_results.
     #
-    # The id is the number in f_C=... when you filter LinkedIn Jobs by that
-    # company, or the organization:NNN on its company page.
+    # The id is the organization:NNN on the company's LinkedIn page. Checked on
+    # 22/10/2026: every one here had Python/Node/TypeScript/backend postings in
+    # Spain in the last month. Left out for having none: Codurance, Endava,
+    # Lean Mind, VASS, Aubay, Babel, Altia, Intelygenz, Opentrends, Luxoft.
+    company_locations: ["Spain"]
     companies:
-      - { name: "Capitole", id: "9413785" }
+      - { name: "Accenture",                 id: "1033" }
+      - { name: "Accenture España",          id: "2723431" }
+      - { name: "Akkodis",                   id: "79383535" }
+      - { name: "ALTEN Spain",               id: "2150009" }
+      - { name: "atmira",                    id: "424555" }
+      - { name: "Atos",                      id: "1259" }
+      - { name: "Avanade",                   id: "3033" }
+      - { name: "Ayesa",                     id: "110862" }
+      - { name: "Bluetab",                   id: "72652" }
+      - { name: "Bosonit",                   id: "9431412" }
+      - { name: "Capgemini",                 id: "157240" }
+      - { name: "Capgemini Engineering",     id: "72092703" }
+      - { name: "Capitole",                  id: "9413785" }
+      - { name: "Cognizant",                 id: "1680" }
+      - { name: "Deloitte",                  id: "1038" }
+      - { name: "Devoteam",                  id: "4160" }
+      - { name: "EPAM Systems",              id: "4972" }
+      - { name: "Experis España",            id: "65441462" }
+      - { name: "GFT Technologies",          id: "163986" }
+      - { name: "Globant",                   id: "8141" }
+      - { name: "GMV",                       id: "10526" }
+      - { name: "HCLTech",                   id: "1756" }
+      - { name: "hiberus",                   id: "2457666" }
+      - { name: "IBM",                       id: "1009" }
+      - { name: "Indra",                     id: "4230" }
+      - { name: "Inetum",                    id: "68841835" }
+      - { name: "Infosys",                   id: "1283" }
+      - { name: "Inycom",                    id: "144850" }
+      - { name: "Izertis",                   id: "2277496" }
+      - { name: "Kairós DS",                 id: "9278696" }
+      - { name: "Keepler Data Tech",         id: "27249250" }
+      - { name: "knowmad mood",              id: "84815538" }
+      - { name: "Kyndryl",                   id: "73002693" }
+      - { name: "Mimacom",                   id: "897721" }
+      - { name: "Minsait",                   id: "10963" }
+      - { name: "NFQ Advisory",              id: "763202" }
+      - { name: "Nter Tech Services",        id: "101543605" }
+      - { name: "NTT DATA Europe & Latam",   id: "76533648" }
+      - { name: "Oesía",                     id: "247724" }
+      - { name: "Paradigma Digital",         id: "834590" }
+      - { name: "Plain Concepts",            id: "429225" }
+      - { name: "S2 Grupo",                  id: "95042" }
+      - { name: "Seidor",                    id: "39568" }
+      - { name: "Sngular",                   id: "10196036" }
+      - { name: "Softtek",                   id: "5344" }
+      - { name: "Sopra Steria",              id: "3054" }
+      - { name: "Stratesys",                 id: "31675" }
+      - { name: "Tata Consultancy Services", id: "1353" }
+      - { name: "Thoughtworks",              id: "157356" }
+      - { name: "T-Systems Iberia",          id: "999183" }
+      - { name: "Viewnext",                  id: "11885" }
+      - { name: "Zemsania",                  id: "627511" }
   tecnoempleo:
     enabled: true
     # full or partial remote work only
