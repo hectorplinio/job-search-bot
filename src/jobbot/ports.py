@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from .domain.criteria import Criteria
+from .domain.criteria import Criteria, PublicCriteria
 from .domain.models import ApplicationDocuments, JobOffer, MatchScore, ScoredOffer
 from .domain.profile import CandidateProfile
+from .domain.public_models import Oposicion, ScoredOposicion
+from .domain.reply_models import ClassifiedReply, EmailReply
 
 
 @runtime_checkable
@@ -49,6 +51,62 @@ class Notifier(Protocol):
     async def send_offer(self, scored: ScoredOffer) -> None: ...
 
     async def send_text(self, text: str) -> None: ...
+
+
+@runtime_checkable
+class PublicSource(Protocol):
+    """A source of public-sector postings (BOE, BOPA, DOGV, BORM...)."""
+
+    name: str
+
+    async def search(self, criteria: PublicCriteria, *, on: object = None) -> list[Oposicion]:
+        """Returns normalised vacancies for a given day. Never raises: on
+        failure it returns []. `on` lets callers ask for a specific date
+        (tests, backfills); the default is "today"."""
+        ...
+
+
+@runtime_checkable
+class PublicOfferRepository(Protocol):
+    """The history of oposiciones already processed."""
+
+    def is_known(self, fingerprint: str) -> bool: ...
+
+    def remember(self, scored: ScoredOposicion, *, notified: bool) -> None: ...
+
+    def top_pending(self, limit: int) -> list[ScoredOposicion]: ...
+
+    def mark_notified(self, fingerprint: str) -> None: ...
+
+
+@runtime_checkable
+class EmailSource(Protocol):
+    """Read-only access to a mailbox (Gmail...). Never sends, never deletes."""
+
+    async def search(self, query: str, *, max_results: int = 50) -> list[EmailReply]:
+        """Messages matching `query`, newest first. Never raises: on failure
+        it returns []."""
+        ...
+
+
+@runtime_checkable
+class ReplyRepository(Protocol):
+    """The history of replies already classified."""
+
+    def is_known(self, message_id: str) -> bool: ...
+
+    def remember(self, classified: ClassifiedReply, *, notified: bool) -> None: ...
+
+    def pending(self, limit: int) -> list[ClassifiedReply]: ...
+
+    def mark_notified(self, message_id: str) -> None: ...
+
+    def all(self) -> list[ClassifiedReply]:
+        """Every reply ever seen, oldest first - the raw material for a
+        per-thread recap. Unbounded on purpose: a few hundred rows of text
+        is nothing to hold in memory, and a hidden limit here would just
+        mean a recap that silently drops old threads."""
+        ...
 
 
 @runtime_checkable

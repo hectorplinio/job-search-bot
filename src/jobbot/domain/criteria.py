@@ -84,6 +84,70 @@ class TelegramCriteria(BaseModel):
     delay_between_messages: float = 1.2
 
 
+class PublicCriteria(BaseModel):
+    """Criteria for the public-sector line (oposiciones y bolsas)."""
+
+    enabled: bool = True
+    # Matched against title + epigraph, accents and case stripped.
+    keywords: list[str] = Field(
+        default_factory=lambda: [
+            "informatica",
+            "sistemas de informacion",
+            "tecnologias de la informacion",
+            "tic",
+            "soporte tecnico",
+            "programador",
+            "desarrollador",
+            "analista",
+        ]
+    )
+    # Priority geographic scope: always notified, regardless of score.
+    priority_locations: list[str] = Field(
+        default_factory=lambda: [
+            "alicante",
+            "diputacion de alicante",
+            "generalitat valenciana",
+            "universidad de alicante",
+            "universitat d'alacant",
+            "umh",
+        ]
+    )
+    # From the Estado, only these TIC bodies are worth matching - a generic
+    # "informatica" hit elsewhere in a huge Estado-wide call is mostly noise.
+    estado_cuerpos_tic: list[str] = Field(
+        default_factory=lambda: [
+            "tecnico auxiliar de informatica",
+            "tai",
+            "cuerpo de gestion de sistemas",
+            "gestion de sistemas e informatica",
+            "cuerpo superior de sistemas",
+            "superior de sistemas y tecnologia",
+        ]
+    )
+    # Default when the announcement's own text does not state a deadline.
+    default_plazo_dias_habiles: int = 20
+    # Minimum score (0-100) to notify a non-urgent oposicion. Urgent ones
+    # (open deadline, priority scope, eligible) bypass this entirely.
+    notify_threshold: int = 50
+    # Separate cadence from the private line: BOE publishes once a day on
+    # working days, so checking every 4h like the private search would be
+    # nine wasted requests for one useful one. Twice a day is plenty.
+    schedule_every_hours: float = 12
+    first_run_after_minutes: float = 5
+
+
+class EmailCriteria(BaseModel):
+    """Criteria for the reply-tracking line (Gmail)."""
+
+    enabled: bool = False
+    # Regular runs only need a short lookback - the search is incremental,
+    # already-seen messages are filtered out by message_id regardless. A
+    # longer window is for the one-off backfill (`jobbot check-mail --days 60`).
+    days_back: int = 3
+    schedule_every_hours: float = 6
+    first_run_after_minutes: float = 7
+
+
 class Criteria(BaseModel):
     search: SearchCriteria = Field(default_factory=SearchCriteria)
     salary: SalaryCriteria = Field(default_factory=SalaryCriteria)
@@ -94,6 +158,8 @@ class Criteria(BaseModel):
     schedule: ScheduleCriteria = Field(default_factory=ScheduleCriteria)
     sources: dict[str, dict] = Field(default_factory=dict)
     telegram: TelegramCriteria = Field(default_factory=TelegramCriteria)
+    public: PublicCriteria = Field(default_factory=PublicCriteria)
+    email: EmailCriteria = Field(default_factory=EmailCriteria)
 
     @classmethod
     def load(cls, path: str | Path) -> Criteria:

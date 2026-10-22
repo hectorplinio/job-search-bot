@@ -60,6 +60,82 @@ def run(
     _run(_main())
 
 
+@app.command("run-public")
+def run_public(
+    dry_run: bool = typer.Option(False, "--dry-run", help="No manda nada a Telegram."),
+) -> None:
+    """One pass over the public-sector line: BOE, oposiciones y bolsas."""
+
+    async def _main() -> None:
+        async with Container() as container:
+            use_case = container.search_public_use_case(notify=not dry_run)
+            result = await use_case.run(dry_run=dry_run)
+
+            console.print(result.as_text())
+            for item in result.alerts:
+                urgente = " [red]URGENTE[/red]" if item.score.urgent else ""
+                console.print(
+                    f"  [green]{item.score.value}/100[/green]{urgente} {item.oposicion.titulo} "
+                    f"· {item.oposicion.organismo} · {item.oposicion.url}"
+                )
+
+    _run(_main())
+
+
+@app.command("check-mail")
+def check_mail(
+    dry_run: bool = typer.Option(False, "--dry-run", help="No manda nada a Telegram."),
+    days: int | None = typer.Option(
+        None, "--days", help="Dias hacia atras. Por defecto, el de config.yaml (email.days_back)."
+    ),
+) -> None:
+    """Revisa el correo: busca respuestas de reclutadores, las clasifica y avisa."""
+
+    async def _main() -> None:
+        async with Container() as container:
+            use_case = container.check_replies_use_case(days_back=days, notify=not dry_run)
+            result = await use_case.run(dry_run=dry_run)
+
+            console.print(result.as_text())
+            for item in result.alerts:
+                console.print(
+                    f"  [green]{item.category.value}[/green] {item.company_guess or '?'} "
+                    f"· {item.reply.subject}"
+                )
+
+    _run(_main())
+
+
+@app.command()
+def recap() -> None:
+    """Una fila por proceso (no por correo): empresa, contacto, estado y
+    ultima actividad, a partir de lo que ya ha visto `check-mail`."""
+    from .domain.recap import build_recap
+
+    async def _main() -> None:
+        async with Container() as container:
+            statuses = build_recap(container.reply_repository.all())
+
+            if not statuses:
+                console.print(
+                    "No hay ningun hilo registrado todavia. Prueba "
+                    "[green]jobbot check-mail[/green] primero."
+                )
+                return
+
+            table = Table("Empresa", "Contacto", "Estado", "Ultima actividad")
+            for status in statuses:
+                table.add_row(
+                    status.company,
+                    status.contact,
+                    status.category.value,
+                    status.last_update.strftime("%d/%m %H:%M"),
+                )
+            console.print(table)
+
+    _run(_main())
+
+
 @app.command()
 def bot() -> None:
     """Starts the bot so you can talk to it from Telegram."""

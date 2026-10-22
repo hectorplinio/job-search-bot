@@ -25,17 +25,21 @@ from .application.write_documents import extract_url
 from .container import Container
 from .domain.cost import format_cost
 from .domain.models import ApplicationDocuments, JobOffer
-from .settings import Settings
+from .settings import MissingSetting, Settings
 
 logger = logging.getLogger(__name__)
 
 TELEGRAM_LIMIT = 3900
 SEARCH_JOB = "periodic-search"
+PUBLIC_SEARCH_JOB = "periodic-public-search"
+CHECK_MAIL_JOB = "periodic-check-mail"
 
 HELP = """\
 <b>Buscador de ofertas</b>
 
 /buscar - lanza una busqueda ahora mismo
+/correo - revisa el correo ahora mismo (entrevistas, rechazos...)
+/recap - una tabla con el estado de cada proceso (sin revisar correo nuevo)
 /top - las mejores ofertas pendientes de mandarte
 /oferta &lt;url&gt; - cover letter + summary para esa oferta
 /carta &lt;url&gt; - solo la cover letter
@@ -95,6 +99,30 @@ async def scheduled_search(context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("Scheduled search: %s sent out of %s reviewed", report.notified, report.fetched)
 
 
+async def scheduled_public_search(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Same idea as scheduled_search, for the public-sector line."""
+    container = context.application.bot_data["container"]
+    try:
+        report = await container.search_public_use_case().run()
+    except Exception:  # noqa: BLE001 - one failure must not kill the bot
+        logger.exception("The scheduled public search failed; it will be retried next time round")
+        return
+    logger.info(
+        "Scheduled public search: %s sent out of %s reviewed", report.notified, report.fetched
+    )
+
+
+async def scheduled_check_replies(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Same idea as scheduled_search, for the reply-tracking line."""
+    container = context.application.bot_data["container"]
+    try:
+        report = await container.check_replies_use_case().run()
+    except Exception:  # noqa: BLE001 - one failure must not kill the bot
+        logger.exception("The scheduled mail check failed; it will be retried next time round")
+        return
+    logger.info("Scheduled mail check: %s sent out of %s reviewed", report.notified, report.fetched)
+
+
 async def next_run(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """When the next automatic search is due."""
     queue = context.application.job_queue
@@ -138,6 +166,34 @@ async def search_now(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     container = _container(context)
     report = await container.search_use_case().run()
     await _reply_long(update, report.as_text())
+
+
+async def check_mail_now(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    message = update.effective_message
+    if message is None:
+        return
+
+    await message.reply_text("📬 Revisando el correo...")
+    await message.chat.send_action(ChatAction.TYPING)
+
+    container = _container(context)
+    try:
+        report = await container.check_replies_use_case().run()
+    except MissingSetting as exc:
+        await _reply_long(update, f"⚠️ {exc}")
+        return
+    await _reply_long(update, report.as_text())
+
+
+async def recap_now(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """One message with every process's current status, from what
+    check-mail has already seen - no mailbox call, so it is instant."""
+    from .adapters.telegram_notifier import format_recap
+    from .domain.recap import build_recap
+
+    container = _container(context)
+    statuses = build_recap(container.reply_repository.all())
+    await _reply_long(update, format_recap(statuses))
 
 
 async def top_pending(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -342,6 +398,39 @@ def build_application(settings: Settings | None = None) -> Application:
         else:
             logger.info("Bot ready. No automatic search (schedule.enabled: false).")
 
+        publico = container.criteria.public
+        if publico.enabled and application.job_queue is not None:
+            application.job_queue.run_repeating(
+                scheduled_public_search,
+                interval=timedelta(hours=publico.schedule_every_hours),
+                first=timedelta(minutes=publico.first_run_after_minutes),
+                name=PUBLIC_SEARCH_JOB,
+            )
+            logger.info(
+                "Public-sector search ready. Every %s h; the first one in %s min.",
+                publico.schedule_every_hours,
+                publico.first_run_after_minutes,
+            )
+
+        correo = container.criteria.email
+        if correo.enabled and not container.settings.gmail_client_id:
+            logger.warning(
+                "email.enabled esta a true pero faltan GMAIL_CLIENT_ID/SECRET/REFRESH_TOKEN en "
+                ".env; el chequeo de correo se queda apagado."
+            )
+        elif correo.enabled and application.job_queue is not None:
+            application.job_queue.run_repeating(
+                scheduled_check_replies,
+                interval=timedelta(hours=correo.schedule_every_hours),
+                first=timedelta(minutes=correo.first_run_after_minutes),
+                name=CHECK_MAIL_JOB,
+            )
+            logger.info(
+                "Mail check ready. Every %s h; the first one in %s min.",
+                correo.schedule_every_hours,
+                correo.first_run_after_minutes,
+            )
+
     async def post_shutdown(_application: Application) -> None:
         await container.__aexit__(None, None, None)
 
@@ -355,6 +444,8 @@ def build_application(settings: Settings | None = None) -> Application:
 
     application.add_handler(CommandHandler(["start", "ayuda", "help"], start, filters=only_me))
     application.add_handler(CommandHandler("buscar", search_now, filters=only_me))
+    application.add_handler(CommandHandler("correo", check_mail_now, filters=only_me))
+    application.add_handler(CommandHandler("recap", recap_now, filters=only_me))
     application.add_handler(CommandHandler("top", top_pending, filters=only_me))
     application.add_handler(CommandHandler("stats", stats, filters=only_me))
     application.add_handler(CommandHandler("usage", usage, filters=only_me))

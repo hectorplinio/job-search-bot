@@ -10,6 +10,7 @@ from .base import BaseSource
 from .companies import CompaniesSource
 from .glassdoor import GlassdoorSource
 from .himalayas import HimalayasSource
+from .hn_whoishiring import HackerNewsSource
 from .infojobs import InfoJobsSource
 from .linkedin import LinkedInSource
 from .manfred import ManfredSource
@@ -33,6 +34,7 @@ REGISTRY: dict[str, SourceFactory] = {
     "himalayas": HimalayasSource,
     "weworkremotely": WeWorkRemotelySource,
     "otta": OttaSource,
+    "hn_whoishiring": HackerNewsSource,
 }
 
 

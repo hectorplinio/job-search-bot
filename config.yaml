@@ -301,6 +301,13 @@ sources:
     pages: 15
   weworkremotely:
     enabled: true
+  hn_whoishiring:
+    # Hacker News "Who is hiring?". One thread a month, ~250+ postings in
+    # free text. No key, no rate limit worth worrying about at this volume.
+    enabled: true
+  boe:
+    # Public-sector line (Linea 2). One request per day; no key needed.
+    enabled: true
   otta:
     # Otta moved to Welcome to the Jungle. It sits behind AWS WAF with a
     # JavaScript challenge and its listing is also behind a sign-up, so copying
@@ -318,6 +325,47 @@ sources:
     # take a minute and a half.
     max_jobs: 20
 
+# Linea 2: oposiciones y bolsas de empleo publico. Sin titulo universitario,
+# asi que las A1/A2 de turno libre se muestran pero marcadas NO ELEGIBLE, y
+# el ambito geografico prioritario se notifica SIEMPRE que el plazo siga
+# abierto, sin importar la puntuacion.
+public:
+  enabled: true
+  keywords:
+    - informatica
+    - sistemas de informacion
+    - tecnologias de la informacion
+    - tic
+    - soporte tecnico
+    - programador
+    - desarrollador
+    - analista
+  # An example. Your real towns go in .env as
+  # JOBBOT_PUBLIC_PRIORITY_LOCATIONS (comma-separated), which replaces this.
+  priority_locations:
+    - alicante
+    - diputacion de alicante
+    - generalitat valenciana
+    - universidad de alicante
+    - universitat d'alacant
+    - umh
+  # Del Estado, solo estos cuerpos TIC cuentan como relevantes: un BOE de
+  # ambito nacional menciona "informatica" de pasada en decenas de ofertas
+  # que no son estas.
+  estado_cuerpos_tic:
+    - tecnico auxiliar de informatica
+    - tai
+    - cuerpo de gestion de sistemas
+    - gestion de sistemas e informatica
+    - cuerpo superior de sistemas
+    - superior de sistemas y tecnologia
+  default_plazo_dias_habiles: 20
+  notify_threshold: 50
+  # El BOE publica una vez al dia laborable: comprobar cada 4h como la linea
+  # privada serian nueve peticiones de sobra por cada una util.
+  schedule_every_hours: 12
+  first_run_after_minutes: 5
+
 schedule:
   # The bot itself launches a search every X hours while it is listening. That
   # way no scheduled task and no cron are needed: a single process, and the
@@ -327,6 +375,16 @@ schedule:
   # A margin before the first search on startup, so it does not go searching
   # the very second you turn the computer on.
   first_run_after_minutes: 3
+
+email:
+  # Needs GMAIL_CLIENT_ID/GMAIL_CLIENT_SECRET/GMAIL_REFRESH_TOKEN in .env
+  # (see scripts/gmail_oauth_setup.py).
+  enabled: true
+  # Regular runs: just the last few days, already-seen messages are filtered
+  # by id regardless. Use `jobbot check-mail --days 60` once for a backfill.
+  days_back: 3
+  schedule_every_hours: 6
+  first_run_after_minutes: 7
 
 telegram:
   # How many postings it sends at most per run, best score first. With 50 you
