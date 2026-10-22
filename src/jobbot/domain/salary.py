@@ -48,6 +48,17 @@ STRONG_SALARY_WORDS = (
     "compensation",
 )
 
+# An amount followed by one of these is a perk, not the pay. Capitole puts
+# "1.200 € de formación" in every posting, and LinkedIn serves the description
+# as a single line, so a "seguimiento mensual" elsewhere turned it into a
+# 14.400 a year salary that rejected the posting.
+_PERK_AFTER = re.compile(
+    r"\s*(?:/\s*año|al año|a year|per year|/\s*year)?"
+    r"\s*(?:de|en|para|of|for|in)?\s*(?:tu|your)?\s*"
+    r"(?:formaci[oó]n|desarrollo profesional|training|learning)",
+    re.IGNORECASE,
+)
+
 HOURLY_MARKERS = ("/h", "hora", "hour", "/día", "/dia", "per day", "diario")
 MONTHLY_MARKERS = ("/mes", "mensual", "al mes", "month", "mensuales", "x 12", "x 14")
 
@@ -114,7 +125,7 @@ def _candidates(line: str) -> tuple[list[int], str]:
             currency = _CURRENCY_BY_SYMBOL.get(symbol, currency)
 
         value = _to_int(match.group("num"))
-        if value is None:
+        if value is None or _PERK_AFTER.match(line, match.end()):
             continue
 
         has_k = bool(match.group("k"))

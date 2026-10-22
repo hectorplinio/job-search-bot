@@ -349,6 +349,46 @@ async def test_linkedin_descarta_por_titulo_antes_de_pedir_la_ficha(criteria) ->
     assert http.fichas == 1
 
 
+async def test_linkedin_lee_el_board_de_las_empresas_que_sigues(criteria) -> None:
+    """Capitole publishes only on LinkedIn, and the keyword searches miss most
+    of it. Each company is read by its id, with no keywords, and does not count
+    against max_results."""
+    general = "".join(LINKEDIN_CARD.replace("4439920031", str(4439920000 + n)) for n in range(10))
+    # The second card is also in the general search.
+    de_capitole = LINKEDIN_CARD.replace("4439920031", "4439930001").replace(
+        "Acme Logistics", "Capitole"
+    ) + LINKEDIN_CARD.replace("4439920031", "4439920000")
+
+    class HttpEmpresas(FakeHttp):
+        def __init__(self) -> None:
+            super().__init__({})
+            self.busquedas: list[dict] = []
+
+        async def get_text(self, url: str, **kwargs) -> str:
+            if "seeMoreJobPostings" in url:
+                params = dict(kwargs.get("params") or {})
+                self.busquedas.append(params)
+                return de_capitole if "f_C" in params else general
+            return LINKEDIN_DETAIL
+
+    criteria.search.queries = ["python"]
+    criteria.search.locations = ["Spain"]
+
+    http = HttpEmpresas()
+    options = {"pages": 1, "max_results": 3, "companies": [{"name": "Capitole", "id": 9413785}]}
+    offers = await LinkedInSource(http, options).search(criteria)
+
+    por_empresa = [p for p in http.busquedas if "f_C" in p]
+    assert len(por_empresa) == 1
+    assert por_empresa[0]["f_C"] == "9413785"
+    assert "keywords" not in por_empresa[0]
+
+    ids = [offer.external_id for offer in offers]
+    assert "linkedin:4439930001" in ids
+    # 3 from the general cap, plus the Capitole one; the repeated one only once.
+    assert len(ids) == len(set(ids)) == 4
+
+
 REMOTIVE_PAYLOAD = {
     "jobs": [
         {
