@@ -113,6 +113,43 @@ class HttpClient:
 
         raise HttpError(f"GET {url} agoto los reintentos: {last_error}")
 
+    async def post(
+        self,
+        url: str,
+        *,
+        data: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> httpx.Response:
+        """Same throttle/retry policy as `get`, for the rare POST (OAuth token
+        exchange...). Scrapers never need this; keep using `get`."""
+        if self._client is None:
+            raise HttpError("HttpClient usado fuera de su context manager")
+
+        host = httpx.URL(url).host
+        last_error: Exception | None = None
+
+        for attempt in range(self._retries + 1):
+            await self._throttle(host)
+            async with self._semaphore:
+                try:
+                    response = await self._client.post(url, data=data, headers=headers)
+                except httpx.HTTPError as exc:
+                    last_error = exc
+                    logger.debug("POST %s failed (%s), attempt %s", url, exc, attempt + 1)
+                else:
+                    if response.status_code in RETRYABLE_STATUS:
+                        last_error = HttpError(f"{response.status_code} en {url}")
+                        logger.debug("POST %s -> %s, retrying", url, response.status_code)
+                    elif response.status_code >= 400:
+                        raise HttpError(f"{response.status_code} en {url}: {response.text}")
+                    else:
+                        return response
+
+            if attempt < self._retries:
+                await asyncio.sleep(2**attempt + random.uniform(0, 0.5))
+
+        raise HttpError(f"POST {url} agoto los reintentos: {last_error}")
+
     async def get_text(self, url: str, **kwargs: Any) -> str:
         response = await self.get(url, **kwargs)
         return response.text

@@ -39,6 +39,12 @@ class Settings:
     # What you do not want published in config.yaml. Empty = the YAML wins.
     salary_minimum: int | None
     salary_target: int | None
+    gmail_client_id: str | None
+    gmail_client_secret: str | None
+    gmail_refresh_token: str | None
+    # Where you live, more or less: the towns whose oposiciones always get
+    # notified. Kept out of config.yaml for the same reason as the salary.
+    public_priority_locations: tuple[str, ...] | None = None
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -63,6 +69,10 @@ class Settings:
             source_credentials=cls._read_credentials(),
             salary_minimum=cls._read_int("JOBBOT_SALARY_MINIMUM"),
             salary_target=cls._read_int("JOBBOT_SALARY_TARGET"),
+            gmail_client_id=os.getenv("GMAIL_CLIENT_ID") or None,
+            gmail_client_secret=os.getenv("GMAIL_CLIENT_SECRET") or None,
+            gmail_refresh_token=os.getenv("GMAIL_REFRESH_TOKEN") or None,
+            public_priority_locations=cls._read_list("JOBBOT_PUBLIC_PRIORITY_LOCATIONS"),
         )
 
     @staticmethod
@@ -76,6 +86,12 @@ class Settings:
         except ValueError:
             logger.warning("%s no es un numero (%r); se usa el valor de config.yaml", name, raw)
             return None
+
+    @staticmethod
+    def _read_list(name: str) -> tuple[str, ...] | None:
+        """A comma-separated list. Empty, or only commas, overrides nothing."""
+        items = tuple(item.strip() for item in (os.getenv(name) or "").split(","))
+        return tuple(item for item in items if item) or None
 
     @staticmethod
     def _read_cookies() -> dict[str, str]:
@@ -110,3 +126,11 @@ class Settings:
                 "Falta ANTHROPIC_API_KEY. Sin ella no hay cover letters ni scoring con LLM."
             )
         return self.anthropic_api_key
+
+    def require_gmail(self) -> tuple[str, str, str]:
+        if not self.gmail_client_id or not self.gmail_client_secret or not self.gmail_refresh_token:
+            raise MissingSetting(
+                "Faltan GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET o GMAIL_REFRESH_TOKEN. "
+                "Genera el refresh token con scripts/gmail_oauth_setup.py."
+            )
+        return self.gmail_client_id, self.gmail_client_secret, self.gmail_refresh_token

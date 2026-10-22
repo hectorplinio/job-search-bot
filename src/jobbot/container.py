@@ -5,14 +5,20 @@ from __future__ import annotations
 import logging
 
 from .adapters.cookie_store import CookieStore
+from .adapters.email.gmail_source import GmailSource
 from .adapters.http import HttpClient
 from .adapters.llm.anthropic_writer import AnthropicWriter
 from .adapters.offer_reader import HtmlOfferReader
 from .adapters.persistence import SqliteOfferRepository
+from .adapters.persistence_public import SqliteOposicionRepository
+from .adapters.persistence_replies import SqliteReplyRepository
+from .adapters.public_sources.registry import build_public_sources
 from .adapters.sources.registry import build_sources
 from .adapters.telegram_notifier import TelegramNotifier
 from .adapters.usage_log import SqliteUsageLog
+from .application.check_replies import CheckReplies
 from .application.search_jobs import SearchJobs
+from .application.search_public_jobs import SearchPublicJobs
 from .application.write_documents import WriteDocuments
 from .domain.criteria import Criteria
 from .domain.profile import CandidateProfile
@@ -29,6 +35,15 @@ class NullNotifier:
 
     async def send_text(self, text: str) -> None:
         logger.info("[dry-run] %s", text)
+
+    async def send_oposicion(self, scored) -> None:
+        logger.info("[dry-run] %s/100 %s", scored.score.value, scored.oposicion.titulo)
+
+    async def send_reply(self, classified) -> None:
+        logger.info("[dry-run] %s: %s", classified.category.value, classified.reply.subject)
+
+    async def send_replies_digest(self, classified) -> None:
+        logger.info("[dry-run] digest de %s correos", len(classified))
 
 
 def configure_logging(level: str) -> None:
@@ -52,6 +67,10 @@ class Container:
         self.criteria = self._load_criteria()
         self.profile = CandidateProfile.load(self.settings.profile_path)
         self.repository = SqliteOfferRepository(self.settings.db_path)
+        # Same file as the private offers, its own table: see
+        # persistence_public.py for why the two do not share one.
+        self.public_repository = SqliteOposicionRepository(self.settings.db_path)
+        self.reply_repository = SqliteReplyRepository(self.settings.db_path)
         self.cookies = CookieStore(self.settings.cookie_path)
         self.usage = SqliteUsageLog(self.settings.db_path)
         self._http: HttpClient | None = None
@@ -60,13 +79,16 @@ class Container:
         """The criteria from the YAML, with .env taking precedence.
 
         Salary lives in .env on purpose: config.yaml is published in the repo,
-        and your negotiating figures have no business being there.
+        and your negotiating figures have no business being there. Nor do the
+        towns around where you live, which the public-sector line prioritises.
         """
         criteria = Criteria.load(self.settings.config_path)
         if self.settings.salary_minimum is not None:
             criteria.salary.minimum = self.settings.salary_minimum
         if self.settings.salary_target is not None:
             criteria.salary.target = self.settings.salary_target
+        if towns := getattr(self.settings, "public_priority_locations", None):
+            criteria.public.priority_locations = list(towns)
         return criteria
 
     def effective_cookies(self) -> dict[str, str]:
@@ -88,6 +110,8 @@ class Container:
             await self._http.__aexit__(*exc_info)
             self._http = None
         self.repository.close()
+        self.public_repository.close()
+        self.reply_repository.close()
         self.usage.close()
 
     @property
@@ -159,9 +183,41 @@ class Container:
             writer=self.writer(required=False) if use_llm else None,
         )
 
+    def public_sources(self, criteria: Criteria | None = None):
+        return build_public_sources(self.http, criteria or self.criteria)
+
+    def search_public_use_case(self, *, notify: bool = True) -> SearchPublicJobs:
+        self.reload_criteria()
+        return SearchPublicJobs(
+            sources=self.public_sources(),
+            repository=self.public_repository,
+            notifier=self.notifier() if notify else NullNotifier(),
+            criteria=self.criteria.public,
+        )
+
     def write_use_case(self) -> WriteDocuments:
         return WriteDocuments(
             reader=self.reader(),
             writer=self.writer(required=True),
             profile=self.profile,
+        )
+
+    def gmail_source(self) -> GmailSource:
+        client_id, client_secret, refresh_token = self.settings.require_gmail()
+        return GmailSource(
+            self.http,
+            client_id=client_id,
+            client_secret=client_secret,
+            refresh_token=refresh_token,
+        )
+
+    def check_replies_use_case(
+        self, *, days_back: int | None = None, notify: bool = True
+    ) -> CheckReplies:
+        self.reload_criteria()
+        return CheckReplies(
+            source=self.gmail_source(),
+            repository=self.reply_repository,
+            notifier=self.notifier() if notify else NullNotifier(),
+            days_back=days_back or self.criteria.email.days_back,
         )

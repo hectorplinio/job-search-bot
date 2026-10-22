@@ -30,6 +30,9 @@ def _settings(tmp_path, **extra) -> Settings:
         source_credentials={},
         salary_minimum=None,
         salary_target=None,
+        gmail_client_id=None,
+        gmail_client_secret=None,
+        gmail_refresh_token=None,
     )
     campos.update(extra)
     return Settings(**campos)
@@ -70,3 +73,13 @@ def test_un_valor_mal_escrito_se_ignora(monkeypatch) -> None:
     settings = Settings.from_env()
     assert settings.salary_minimum is None
     assert settings.salary_target is None
+
+
+def test_los_pueblos_prioritarios_salen_del_entorno(tmp_path, monkeypatch) -> None:
+    """The real towns say where you live, so they live in .env, not in the
+    published config.yaml."""
+    monkeypatch.setenv("JOBBOT_PUBLIC_PRIORITY_LOCATIONS", " villa , ,pueblo ")
+    assert Settings.from_env().public_priority_locations == ("villa", "pueblo")
+
+    settings = _settings(tmp_path, public_priority_locations=("villa", "pueblo"))
+    assert Container(settings).criteria.public.priority_locations == ["villa", "pueblo"]
