@@ -351,8 +351,9 @@ async def test_linkedin_descarta_por_titulo_antes_de_pedir_la_ficha(criteria) ->
 
 async def test_linkedin_lee_el_board_de_las_empresas_que_sigues(criteria) -> None:
     """Capitole publishes only on LinkedIn, and the keyword searches miss most
-    of it. Each company is read by its id, with no keywords, and does not count
-    against max_results."""
+    of it. Each company is searched by its id, once, in Spain only and with
+    the required keywords joined by OR, and does not count against
+    max_results."""
     general = "".join(LINKEDIN_CARD.replace("4439920031", str(4439920000 + n)) for n in range(10))
     # The second card is also in the general search.
     de_capitole = LINKEDIN_CARD.replace("4439920031", "4439930001").replace(
@@ -372,7 +373,8 @@ async def test_linkedin_lee_el_board_de_las_empresas_que_sigues(criteria) -> Non
             return LINKEDIN_DETAIL
 
     criteria.search.queries = ["python"]
-    criteria.search.locations = ["Spain"]
+    criteria.search.locations = ["Spain", "European Union"]
+    criteria.keywords.required_any = ["python", "backend"]
 
     http = HttpEmpresas()
     options = {"pages": 1, "max_results": 3, "companies": [{"name": "Capitole", "id": 9413785}]}
@@ -381,12 +383,21 @@ async def test_linkedin_lee_el_board_de_las_empresas_que_sigues(criteria) -> Non
     por_empresa = [p for p in http.busquedas if "f_C" in p]
     assert len(por_empresa) == 1
     assert por_empresa[0]["f_C"] == "9413785"
-    assert "keywords" not in por_empresa[0]
+    assert por_empresa[0]["keywords"] == "python OR backend"
+    assert por_empresa[0]["location"] == "Spain"
+    # Only the last week: older ones were read on an earlier run.
+    assert por_empresa[0]["f_TPR"] == "r604800"
 
     ids = [offer.external_id for offer in offers]
     assert "linkedin:4439930001" in ids
     # 3 from the general cap, plus the Capitole one; the repeated one only once.
     assert len(ids) == len(set(ids)) == 4
+
+    # They have a cap of their own, apart from max_results.
+    options["company_max_results"] = 1
+    offers = await LinkedInSource(HttpEmpresas(), options).search(criteria)
+    assert "linkedin:4439930001" in [offer.external_id for offer in offers]
+    assert len(offers) == 4
 
 
 REMOTIVE_PAYLOAD = {

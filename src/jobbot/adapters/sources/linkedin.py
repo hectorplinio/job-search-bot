@@ -35,6 +35,10 @@ TIME_WINDOWS = {7: "r604800", 14: "r1209600", 30: "r2592000"}
 PAGE_SIZE = 10
 DEFAULT_PAGES = 3
 
+# For the companies you follow (sources.linkedin.companies).
+DEFAULT_COMPANY_MAX_AGE_DAYS = 7
+DEFAULT_COMPANY_MAX_RESULTS = 100
+
 # "40 solicitudes", "Mas de 200 solicitudes", "Over 200 applicants". It only
 # appears on the detail page, and in roughly half the postings.
 _APPLICANTS = re.compile(r"(m[aá]s de|over)?\s*([\d.,]+)\s*(?:solicitud|applicant)", re.I)
@@ -69,17 +73,39 @@ class LinkedInSource(BaseSource):
 
         # The consultancies you follow. Capitole and the like publish only on
         # LinkedIn, and the keyword searches miss most of their postings
-        # because LinkedIn ranks them low. Reading their whole board by
-        # company id (f_C) catches them all.
+        # because LinkedIn ranks them low. Searching by company id (f_C)
+        # catches them all.
+        #
+        # With dozens of companies, reading each whole board would be too many
+        # requests for LinkedIn: a consultancy's board is mostly SAP, .NET and
+        # electrical engineering, and each card kept costs one more request for
+        # its description. So each company is searched once, only where you
+        # can work, with your required keywords joined by OR.
+        #
+        # And only over the last week: the bot runs every few hours, so an
+        # older posting was already read on an earlier run. Measured with 52
+        # consultancies, the 30-day window gave 501 postings to fetch, about
+        # twelve minutes of detail pages on every run.
+        company_keywords = " OR ".join(criteria.keywords.required_any)
+        company_locations = self.options.get("company_locations") or ["Spain"]
+        company_window = self._time_window(
+            int(self.options.get("company_max_age_days") or DEFAULT_COMPANY_MAX_AGE_DAYS)
+        )
         company_groups: list[list[JobOffer]] = []
         for company in self.options.get("companies") or []:
             company_id = str(company.get("id") or "").strip()
             if not company_id:
                 continue
-            for location in criteria.search.locations:
+            for location in company_locations:
                 company_groups.append(
                     await self._search_query(
-                        "", location, workplace_types, window, criteria, pages, company_id
+                        company_keywords,
+                        location,
+                        workplace_types,
+                        company_window,
+                        criteria,
+                        pages,
+                        company_id,
                     )
                 )
 
@@ -105,12 +131,18 @@ class LinkedInSource(BaseSource):
             len(candidates),
             min(limit, len(candidates)),
         )
-        # The companies you follow do not count against that cap: you asked
+        # The companies you follow have a cap of their own instead: you asked
         # for them by name, so a busy day on the general searches must not
-        # push them out. Each company search is already capped per query.
+        # push them out. They come interleaved, so a big board like Accenture's
+        # cannot take the whole cap from the small ones either.
+        company_limit = int(self.options.get("company_max_results") or DEFAULT_COMPANY_MAX_RESULTS)
         if company_candidates:
-            logger.info("LinkedIn: %d more from the companies you follow", len(company_candidates))
-        kept = self._deduplicate(company_candidates + candidates[:limit])
+            logger.info(
+                "LinkedIn: %d more from the companies you follow, keeping %d",
+                len(company_candidates),
+                min(company_limit, len(company_candidates)),
+            )
+        kept = self._deduplicate(company_candidates[:company_limit] + candidates[:limit])
         return [await self._with_description(offer) for offer in kept]
 
     async def _search_query(
@@ -161,8 +193,7 @@ class LinkedInSource(BaseSource):
             "start": start,
             "sortBy": "DD",
         }
-        # A company search goes without keywords: it reads the company's whole
-        # board, and the rule filter decides what fits afterwards.
+        # Empty keywords are left out rather than sent blank.
         if query:
             params["keywords"] = query
         if company_id:
