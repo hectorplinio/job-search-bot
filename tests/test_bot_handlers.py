@@ -138,3 +138,31 @@ async def test_si_el_mensaje_del_boton_es_inaccesible_responde_por_el_chat() -> 
 async def test_el_texto_corto_sin_enlace_pide_una_oferta(texto: str) -> None:
     await bot_module.free_text(FakeUpdate(effective_message=mensaje(texto)), FakeContext())
     assert "Mandame el enlace" in RESPUESTAS[0]
+
+
+async def test_un_corte_de_red_es_una_linea_no_un_traceback(caplog) -> None:
+    """Waking the laptop from sleep drops the polling connection; the loop
+    retries on its own, so it must not dump a traceback every time."""
+    from telegram.error import NetworkError
+
+    class Contexto:
+        error = NetworkError("httpx.ReadError: ")
+
+    with caplog.at_level("WARNING", logger="jobbot.bot"):
+        await bot_module.on_error(None, Contexto())  # type: ignore[arg-type]
+
+    [registro] = caplog.records
+    assert registro.levelname == "WARNING"
+    assert registro.exc_info is None
+
+
+async def test_cualquier_otro_error_conserva_su_traceback(caplog) -> None:
+    class Contexto:
+        error = ValueError("boom")
+
+    with caplog.at_level("ERROR", logger="jobbot.bot"):
+        await bot_module.on_error(None, Contexto())  # type: ignore[arg-type]
+
+    [registro] = caplog.records
+    assert registro.levelname == "ERROR"
+    assert registro.exc_info is not None
